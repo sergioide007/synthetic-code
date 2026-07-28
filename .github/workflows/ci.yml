@@ -12,11 +12,38 @@ env:
   # un SDK de Anthropic inyectado en sys.modules): no se necesita ninguna
   # API key real para que este workflow pase en verde.
   SINTETICO_API_DB_PATH: ci_traces.db
+  # Postgres para tests de PostgresTraceStore (servicio definido abajo)
+  SINTETICO_TEST_POSTGRES_URL: postgresql://sintetico:sintetico@localhost:5432/sintetico_test
+  # Redis para tests de RedisBudgetBackend (servicio definido abajo)
+  SINTETICO_TEST_REDIS_URL: redis://localhost:6379/0
 
 jobs:
   test:
     name: Tests (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sintetico
+          POSTGRES_PASSWORD: sintetico
+          POSTGRES_DB: sintetico_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
