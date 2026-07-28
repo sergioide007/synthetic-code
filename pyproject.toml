@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codigo-sintetico"
+version = "2.0.0"
+description = "Patrones de referencia para sistemas multiagente de producción — libro Código Sintético"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Sergio Perez Ruiz" }]
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40"]
+openai = ["openai>=1.50"]
+local = ["requests>=2.31"]
+redis = ["redis>=5.0"]
+mcp = ["jsonschema>=4.20"]
+api = ["fastapi>=0.115", "uvicorn[standard]>=0.32"]
+postgres = ["psycopg2-binary>=2.9"]
+all = ["anthropic>=0.40", "openai>=1.50", "requests>=2.31", "redis>=5.0", "jsonschema>=4.20",
+       "fastapi>=0.115", "uvicorn[standard]>=0.32", "psycopg2-binary>=2.9"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "httpx>=0.27"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sintetico_api = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+# Selección deliberadamente conservadora: pyflakes (F, bugs reales como
+# imports/variables sin usar o nombres indefinidos) + errores de sintaxis
+# (E9) + bugcatching básico de pycodestyle. Se evita a propósito activar
+# reglas puramente estilísticas (E501 longitud de línea, D docstrings,
+# etc.) que no se pudieron verificar contra este código en un entorno sin
+# red durante su desarrollo — más vale un lint estricto en lo que importa
+# (bugs) que uno ruidoso en lo que no.
+select = ["E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Los __init__.py re-exportan símbolos a propósito (API pública del paquete).
+"src/*/__init__.py" = ["F401"]

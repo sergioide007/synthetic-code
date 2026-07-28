@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Código Sintético — Agent Observability</title>
+<meta name="description" content="Consola de observabilidad para los patrones multiagente del libro Código Sintético: trazas, coste y decisiones en vivo." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%236C8EFF%22/><path d=%22M7 9l-3 3 3 3M17 9l3 3-3 3M14 6l-4 12%22 stroke=%22%230A0D12%22 stroke-width=%222.2%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ══════════ Barra lateral ══════════ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M7 9l-3 3 3 3M17 9l3 3-3 3M14 6l-4 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div class="brand-text">
+        <strong>Código Sintético</strong>
+        <span>Agent Observability</span>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Navegación principal">
+      <button class="nav-item is-active" data-view="overview">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="10.5" width="3.5" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="8.25" y="6" width="3.5" height="11.5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="14" y="2.5" width="3.5" height="15" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+        Overview
+      </button>
+      <button class="nav-item" data-view="traces">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h9M3 15h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Trazas <span class="nav-badge" id="nav-live-count">0</span>
+      </button>
+      <button class="nav-item" data-view="agent">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 17c1-3.5 3.8-5.5 6.5-5.5s5.5 2 6.5 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Agente en vivo
+      </button>
+      <button class="nav-item" data-view="api">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M7 3L3 10l4 7M13 3l4 7-4 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        API / Swagger
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="env-pill" id="env-pill">
+        <span class="dot dot-ok"></span> comprobando…
+      </div>
+      <a class="book-cta" href="#" target="_blank" rel="noopener">
+        📖 Sobre el libro
+      </a>
+    </div>
+  </aside>
+
+  <!-- ══════════ Contenido principal ══════════ -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 id="view-title">Overview</h1>
+        <p id="view-subtitle">Estado agregado de los 4 pilares y del agente en vivo</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="window-select">
+          <label for="window-minutes">Ventana</label>
+          <select id="window-minutes">
+            <option value="15">15 min</option>
+            <option value="60" selected>1 h</option>
+            <option value="1440">24 h</option>
+            <option value="10080">7 d</option>
+          </select>
+        </div>
+        <button class="auth-btn" id="auth-btn" title="Configurar API key" aria-haspopup="dialog">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="4" y="9" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 9V6a3.5 3.5 0 0 1 7 0v3" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span id="auth-btn-label">API key</span>
+        </button>
+        <button class="live-toggle" id="live-toggle" aria-pressed="true">
+          <span class="pulse" aria-hidden="true"></span> Live
+        </button>
+      </div>
+    </header>
+
+    <!-- ───────── Vista: Overview ───────── -->
+    <section class="view" id="view-overview" data-view-panel>
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <span class="kpi-label">Coste total</span>
+          <span class="kpi-value mono" id="kpi-cost">$0.000000</span>
+          <span class="kpi-hint" id="kpi-cost-hint">ventana seleccionada</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Eventos de traza</span>
+          <span class="kpi-value mono" id="kpi-events">0</span>
+          <span class="kpi-hint" id="kpi-events-hint">agent_start · reasoning_step · tool_result…</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Latencia p95</span>
+          <span class="kpi-value mono" id="kpi-latency">0 ms</span>
+          <span class="kpi-hint" id="kpi-latency-hint">avg <span id="kpi-latency-avg">0</span> ms</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Runs completados</span>
+          <span class="kpi-value mono" id="kpi-runs">0</span>
+          <span class="kpi-hint" id="kpi-runs-hint">0 en curso</span>
+        </div>
+      </div>
+
+      <div class="pillars-row">
+        <article class="pillar-card" data-pillar="orchestration">
+          <div class="pillar-icon" style="--pc:#6C8EFF">⚙️</div>
+          <h3>Orquestación eficiente</h3>
+          <p>Enrutamiento por complejidad + caché semántica + presupuesto.</p>
+          <button class="run-btn" data-run="orchestration">Ejecutar demo</button>
+        </article>
+        <article class="pillar-card" data-pillar="quality_gate">
+          <div class="pillar-icon" style="--pc:#34D399">✅</div>
+          <h3>Calidad autónoma CI/CD</h3>
+          <p>TrustScore + exit codes + emergency override auditado.</p>
+          <button class="run-btn" data-run="quality_gate">Ejecutar demo</button>
+        </article>
+        <article class="pillar-card" data-pillar="self_cleaning">
+          <div class="pillar-icon" style="--pc:#22D3C7">🧹</div>
+          <h3>Código autolimpiable</h3>
+          <p>Detección de smells, refactor determinista, validación estática.</p>
+          <button class="run-btn" data-run="self_cleaning">Ejecutar demo</button>
+        </article>
+        <article class="pillar-card" data-pillar="resilient_swarm">
+          <div class="pillar-icon" style="--pc:#FBBF24">🛡️</div>
+          <h3>Arquitectura resiliente</h3>
+          <p>Enjambre con detección de ciclos + circuit breaker de agentes.</p>
+          <button class="run-btn" data-run="resilient_swarm">Ejecutar demo</button>
+        </article>
+      </div>
+
+      <div class="charts-row">
+        <div class="panel chart-panel">
+          <div class="panel-head"><h3>Coste por modelo</h3><span class="panel-hint">ventana seleccionada</span></div>
+          <canvas id="chart-cost-model" height="180"></canvas>
+        </div>
+        <div class="panel chart-panel">
+          <div class="panel-head"><h3>Eventos por pilar</h3><span class="panel-hint">ventana seleccionada</span></div>
+          <canvas id="chart-events-pillar" height="180"></canvas>
+        </div>
+        <div class="panel chart-panel">
+          <div class="panel-head"><h3>Eventos por nivel</h3><span class="panel-hint">INFO / WARNING / ERROR</span></div>
+          <canvas id="chart-events-level" height="180"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── Vista: Trazas ───────── -->
+    <section class="view" id="view-traces" data-view-panel hidden>
+      <div class="panel table-panel">
+        <div class="panel-head">
+          <h3>Live tail</h3>
+          <span class="panel-hint">Cada fila es un evento estructurado; haz clic para ver la traza completa (waterfall).</span>
+        </div>
+        <div class="table-wrap">
+          <table class="trace-table" id="trace-table">
+            <thead>
+              <tr>
+                <th>Hora</th><th>Nivel</th><th>Pilar</th><th>Evento</th>
+                <th>correlation_id</th><th>Modelo</th><th>Latencia</th><th>Coste</th>
+              </tr>
+            </thead>
+            <tbody id="trace-table-body">
+              <tr class="empty-row"><td colspan="8">Sin eventos todavía. Ejecuta un pilar desde Overview.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── Vista: Agente en vivo ───────── -->
+    <section class="view" id="view-agent" data-view-panel hidden>
+      <div class="agent-layout">
+        <div class="panel agent-panel">
+          <div class="panel-head">
+            <h3>Pregúntale al agente ReAct</h3>
+            <span class="panel-hint" id="agent-provider-hint">detectando proveedor…</span>
+          </div>
+          <div class="agent-chat" id="agent-chat">
+            <div class="agent-msg agent-msg-system">
+              Este agente sigue el ciclo <strong>Thought → Action → Observation</strong> con trazabilidad
+              completa. Prueba: <em>"¿qué archivos hay disponibles?"</em> o <em>"busca en la documentación"</em>.
+            </div>
+          </div>
+          <form class="agent-form" id="agent-form">
+            <input type="text" id="agent-input" placeholder="Escribe una consulta…" maxlength="500" autocomplete="off" />
+            <button type="submit">Enviar</button>
+          </form>
+        </div>
+        <aside class="panel agent-side">
+          <h4>Última ejecución</h4>
+          <dl class="agent-meta" id="agent-meta">
+            <dt>Estado</dt><dd>—</dd>
+            <dt>Proveedor</dt><dd>—</dd>
+            <dt>Coste</dt><dd>—</dd>
+            <dt>Pasos</dt><dd>—</dd>
+          </dl>
+          <button class="view-trace-btn" id="agent-view-trace" disabled>Ver traza completa →</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ───────── Vista: API / Swagger ───────── -->
+    <section class="view" id="view-api" data-view-panel hidden>
+      <div class="panel api-panel">
+        <h3>Documentación de la API</h3>
+        <p>Esta consola se alimenta enteramente de la API HTTP documentada abajo — todo lo que ves aquí
+          puede automatizarse o integrarse en tu propio stack de observabilidad.</p>
+        <div class="api-links">
+          <a href="/docs" target="_blank" class="api-link-card">
+            <strong>Swagger UI</strong>
+            <span>/docs — documentación interactiva, prueba cada endpoint</span>
+          </a>
+          <a href="/redoc" target="_blank" class="api-link-card">
+            <strong>ReDoc</strong>
+            <span>/redoc — referencia legible, ideal para compartir</span>
+          </a>
+          <a href="/openapi.json" target="_blank" class="api-link-card">
+            <strong>OpenAPI JSON</strong>
+            <span>/openapi.json — impórtalo en Postman/Insomnia</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ══════════ Drawer de traza (waterfall) ══════════ -->
+<div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+<aside class="drawer" id="trace-drawer" hidden aria-label="Detalle de traza">
+  <div class="drawer-head">
+    <div>
+      <span class="drawer-eyebrow">TRAZA</span>
+      <h2 class="mono" id="drawer-correlation-id">—</h2>
+    </div>
+    <button class="drawer-close" id="drawer-close" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="drawer-summary" id="drawer-summary"></div>
+  <div class="waterfall" id="drawer-waterfall"></div>
+  <div class="drawer-events" id="drawer-events"></div>
+</aside>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+<!-- ══════════ Modal de API key ══════════ -->
+<div class="modal-backdrop" id="auth-modal-backdrop" hidden></div>
+<div class="modal" id="auth-modal" hidden role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+  <h2 id="auth-modal-title">API key</h2>
+  <p class="modal-copy" id="auth-modal-copy">
+    Este servidor no requiere autenticación en este momento: la API está abierta.
+  </p>
+  <label class="modal-label" for="auth-modal-input">X-API-Key</label>
+  <input type="password" id="auth-modal-input" placeholder="Pégala aquí…" autocomplete="off" />
+  <p class="modal-hint">Se guarda sólo en este navegador (localStorage), nunca se envía a ningún sitio salvo a este mismo servidor.</p>
+  <div class="modal-actions">
+    <button class="modal-btn-secondary" id="auth-modal-clear">Quitar</button>
+    <button class="modal-btn-primary" id="auth-modal-save">Guardar</button>
+  </div>
+</div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>

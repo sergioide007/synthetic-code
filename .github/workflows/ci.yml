@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  # Todos los tests corren contra proveedores simulados (MockProvider /
+  # un SDK de Anthropic inyectado en sys.modules): no se necesita ninguna
+  # API key real para que este workflow pase en verde.
+  SINTETICO_API_DB_PATH: ci_traces.db
+
+jobs:
+  test:
+    name: Tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Instalar el proyecto (todas las extras + dev)
+        run: pip install -e ".[all,dev]"
+
+      - name: Ejecutar la suite de tests con cobertura
+        run: |
+          pytest tests/ -v \
+            --cov=sintetico --cov=trazabilidad --cov=sintetico_api \
+            --cov-report=term-missing --cov-report=xml
+
+      - name: Publicar reporte de cobertura como artefacto
+        uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 14
+
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar ruff
+        run: pip install ruff
+      - name: "Ruff check (bloqueante: bugs reales como imports/nombres sin usar)"
+        run: ruff check src/ tests/ demos/
+      - name: Ruff format --check (informativo)
+        # No bloqueante: el código se escribió y verificó en un entorno sin
+        # acceso a red donde `ruff format` no se pudo ejecutar para
+        # confirmar el cumplimiento exacto del estilo. Se deja como señal
+        # informativa hasta que alguien lo ejecute una vez con red y, si
+        # hace falta, aplique `ruff format .` y quite este comentario.
+        run: ruff format --check src/ tests/ demos/
+        continue-on-error: true
+
+  smoke-test-server:
+    name: Smoke test del servidor (uvicorn real)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar el proyecto con soporte de API
+        run: pip install -e ".[api]"
+
+      - name: Arrancar uvicorn en segundo plano
+        run: |
+          nohup uvicorn sintetico_api.main:app --host 127.0.0.1 --port 8000 \
+            > uvicorn.log 2>&1 &
+          echo $! > uvicorn.pid
+
+      - name: Esperar a que el servidor responda
+        run: |
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:8000/api/v1/health > /dev/null; then
+              echo "Servidor arriba tras $i intento(s)"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "El servidor no respondió a tiempo"
+          cat uvicorn.log
+          exit 1
+
+      - name: Verificar /api/v1/health
+        run: |
+          curl -sf http://127.0.0.1:8000/api/v1/health | tee health.json
+          grep -q '"status":"ok"' health.json || grep -q '"status": "ok"' health.json
+
+      - name: Verificar que el dashboard se sirve
+        run: curl -sf http://127.0.0.1:8000/ | grep -qi "Agent Observability"
+
+      - name: Verificar que Swagger UI responde
+        run: curl -sf http://127.0.0.1:8000/docs | grep -qi "swagger"
+
+      - name: Smoke test funcional — ejecutar un pilar de principio a fin
+        run: |
+          RESPONSE=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/runs/orchestration \
+            -H "Content-Type: application/json" -d '{"team_id":"ci"}')
+          echo "$RESPONSE"
+          echo "$RESPONSE" | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['summary']['total_cost_usd'] >= 0; print('OK: run completado con summary válido')"
+
+      - name: Volcar logs del servidor (si algo falló)
+        if: failure()
+        run: cat uvicorn.log || true
+
+      - name: Detener uvicorn
+        if: always()
+        run: kill $(cat uvicorn.pid) 2>/dev/null || true
+
+  build-package:
+    name: Build del paquete (sdist + wheel)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar herramientas de build
+        run: pip install build
+      - name: Construir sdist y wheel
+        run: python -m build
+      - name: Comprobar que el wheel se instala limpio en un venv nuevo
+        run: |
+          python -m venv /tmp/venv-check
+          /tmp/venv-check/bin/pip install dist/*.whl
+          /tmp/venv-check/bin/python -c "import sintetico, trazabilidad; print('sintetico', sintetico.__version__)"
