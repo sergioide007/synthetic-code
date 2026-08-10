@@ -11,11 +11,10 @@ from __future__ import annotations
 
 import os
 import threading
-import time
 
 import pytest
 
-from sintetico.budget import LocalMemoryBudgetBackend, RedisBudgetBackend, RedisUnavailableError, TokenBudget
+from sintetico.budget import RedisBudgetBackend, RedisUnavailableError, TokenBudget
 
 
 def _make_redis_backend(db: int = 1) -> RedisBudgetBackend:

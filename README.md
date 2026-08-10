@@ -104,7 +104,7 @@ tests de contrato compartidos entre el backend SQLite y el de Postgres
 una versión anterior lo documenta en su docstring como regresión.
 
 CI (`.github/workflows/ci.yml`) corre esta suite en cada push/PR sobre
-Python 3.10–3.12, más un smoke test que arranca `uvicorn` de verdad.
+Python 3.10-3.12, más un smoke test que arranca `uvicorn` de verdad.
 
 ## Despliegue con más de una instancia (Postgres + autenticación)
 

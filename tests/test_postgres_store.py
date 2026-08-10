@@ -14,9 +14,7 @@ un Postgres accesible. Si no se cumple, los tests se omiten limpiamente.
 
 from __future__ import annotations
 
-import json
 import os
-import queue
 import threading
 import time
 
@@ -40,7 +38,6 @@ def store(request):
     if not dsn:
         pytest.skip("Define SINTETICO_TEST_POSTGRES_URL para correr los tests de Postgres")
 
-    from sintetico_api.postgres_store import PostgresTraceStore
     try:
         store = PostgresTraceStore(dsn)
     except psycopg2.OperationalError as exc:
@@ -90,7 +87,6 @@ class TestPostgresSchema:
         if not dsn:
             pytest.skip("SINTETICO_TEST_POSTGRES_URL no definido")
         
-        from sintetico_api.postgres_store import PostgresTraceStore
         store1 = PostgresTraceStore(dsn)
         store2 = PostgresTraceStore(dsn)  # No debe fallar
         store1.close()
@@ -262,7 +258,7 @@ class TestPostgresRuns:
         assert store.get_run("no-existe-xyz") is None
 
     def test_list_runs_returns_recent_runs(self, store):
-        run_id_1 = store.create_run(pillar="orchestration", team_id="team-1")
+        store.create_run(pillar="orchestration", team_id="team-1")
         time.sleep(0.1)
         run_id_2 = store.create_run(pillar="quality_gate", team_id="team-2")
         runs = store.list_runs(limit=10)
@@ -496,7 +492,7 @@ class TestPostgresConcurrency:
     def test_concurrent_reads_during_inserts(self, store):
         """Lecturas concurrentes mientras se insertan eventos no fallan."""
         errors = []
-        stop_reading = threading.Event()
+        threading.Event()
 
         def insert_events():
             for i in range(20):
@@ -706,7 +702,7 @@ class TestPostgresEdgeCases:
 
     def test_insert_event_with_empty_payload_dict(self, store):
         """Payload vacío se almacena correctamente."""
-        event_id = store.insert_event(
+        store.insert_event(
             {
                 "correlation_id": "pg-edge1",
                 "event_type": "empty_payload",
@@ -747,7 +743,7 @@ class TestPostgresEdgeCases:
     def test_large_payload_handling(self, store):
         """JSONB maneja payloads grandes sin problemas."""
         large_payload = {"data": "x" * 10000}  # 10KB de datos
-        event_id = store.insert_event(
+        store.insert_event(
             {
                 "correlation_id": "pg-edge5",
                 "event_type": "large",
