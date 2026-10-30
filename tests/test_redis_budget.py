@@ -34,6 +34,11 @@ def _make_redis_backend(db: int = 1) -> RedisBudgetBackend:
         backend = RedisBudgetBackend(host=host, port=port, db=int(base_db) + db, socket_timeout=3.0)
     except RedisUnavailableError as exc:
         pytest.skip(f"Redis no accesible en {host}:{port}: {exc}")
+    # El constructor no lanza si no puede conectar: registra el error y deja
+    # `_available` en False. Sin esta comprobación, sin servidor Redis los
+    # tests fallaban en vez de omitirse, contra lo que dice el docstring.
+    if not backend._available:
+        pytest.skip(f"Redis no accesible en {host}:{port}")
     # Limpiar datos de tests anteriores en esta DB
     _cleanup_redis(backend)
     return backend
@@ -58,12 +63,14 @@ class TestRedisBudgetBackendConnection:
 
     def test_raises_on_operation_when_unreachable(self):
         """Operar sobre un backend con host inalcanzable lanza RedisUnavailableError."""
+        pytest.importorskip("redis", reason="redis-py no instalado")
         backend = RedisBudgetBackend(host="192.0.2.1", port=6379, socket_timeout=1.0)
         with pytest.raises(RedisUnavailableError):
             backend.get_spent("budget:test:dead")
 
     def test_raises_on_operation_when_wrong_port(self):
         """Operar sobre un backend con puerto incorrecto lanza RedisUnavailableError."""
+        pytest.importorskip("redis", reason="redis-py no instalado")
         backend = RedisBudgetBackend(host="localhost", port=1, socket_timeout=1.0)
         with pytest.raises(RedisUnavailableError):
             backend.add_cost("budget:test:dead", 1.0, 100.0)
@@ -192,7 +199,7 @@ class TestRedisBudgetBackendWithTokenBudget:
                 on_alert=lambda pct, team, spent: seen.append(pct),
             )
             budget.record_cost(50.0)  # cruza 50%
-            budget.record_cost(1.0)   # no cruza nuevo umbral
+            budget.record_cost(1.0)  # no cruza nuevo umbral
             assert seen == [0.5]
         finally:
             backend.redis.close()

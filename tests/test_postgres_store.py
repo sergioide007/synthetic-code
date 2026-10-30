@@ -73,10 +73,7 @@ class TestPostgresSchema:
             "idx_sintetico_runs_started",
         }
         with store._cursor() as cur:
-            cur.execute(
-                "SELECT indexname FROM pg_indexes "
-                "WHERE tablename IN ('sintetico_events', 'sintetico_runs')"
-            )
+            cur.execute("SELECT indexname FROM pg_indexes WHERE tablename IN ('sintetico_events', 'sintetico_runs')")
             actual_indexes = {row["indexname"] for row in cur.fetchall()}
         assert expected_indexes.issubset(actual_indexes)
 
@@ -86,7 +83,7 @@ class TestPostgresSchema:
         dsn = os.environ.get("SINTETICO_TEST_POSTGRES_URL")
         if not dsn:
             pytest.skip("SINTETICO_TEST_POSTGRES_URL no definido")
-        
+
         store1 = PostgresTraceStore(dsn)
         store2 = PostgresTraceStore(dsn)  # No debe fallar
         store1.close()
@@ -212,17 +209,32 @@ class TestPostgresEvents:
     def test_list_events_respects_limit(self, store):
         for i in range(10):
             store.insert_event(
-                {"correlation_id": f"pg-c-limit-{i}", "event_type": "x", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+                {
+                    "correlation_id": f"pg-c-limit-{i}",
+                    "event_type": "x",
+                    "level": "INFO",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                }
             )
         events = store.list_events(limit=5)
         assert len(events) == 5
 
     def test_list_events_returns_in_chronological_order(self, store):
         store.insert_event(
-            {"correlation_id": "pg-c-order", "event_type": "first", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+            {
+                "correlation_id": "pg-c-order",
+                "event_type": "first",
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:00+00:00",
+            }
         )
         store.insert_event(
-            {"correlation_id": "pg-c-order", "event_type": "second", "level": "INFO", "timestamp": "2026-01-01T00:00:01+00:00"}
+            {
+                "correlation_id": "pg-c-order",
+                "event_type": "second",
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:01+00:00",
+            }
         )
         events = store.list_events(limit=10)
         assert events[0]["event_type"] == "first"
@@ -325,10 +337,20 @@ class TestPostgresMetrics:
 
     def test_metrics_summary_groups_by_event_type(self, store):
         store.insert_event(
-            {"correlation_id": "pg-m5", "event_type": "agent_start", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+            {
+                "correlation_id": "pg-m5",
+                "event_type": "agent_start",
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:00+00:00",
+            }
         )
         store.insert_event(
-            {"correlation_id": "pg-m6", "event_type": "agent_finish", "level": "INFO", "timestamp": "2026-01-01T00:00:01+00:00"}
+            {
+                "correlation_id": "pg-m6",
+                "event_type": "agent_finish",
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:01+00:00",
+            }
         )
         metrics = store.metrics_summary(window_minutes=10_000_000)
         assert metrics["events_by_type"]["agent_start"] == 1
@@ -427,7 +449,12 @@ class TestPostgresLiveTail:
         sub = store.subscribe()
         store.unsubscribe(sub)
         store.insert_event(
-            {"correlation_id": "pg-lt3", "event_type": "after_unsub", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+            {
+                "correlation_id": "pg-lt3",
+                "event_type": "after_unsub",
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:00+00:00",
+            }
         )
         # La cola debe estar vacía (no se recibió el evento)
         assert sub.empty()
@@ -446,7 +473,12 @@ class TestPostgresLiveTail:
                 sub.put_nowait({"event_type": "filler"})
             # Ahora insertar un evento real no debe bloquearse
             event_id = store.insert_event(
-                {"correlation_id": "pg-lt4", "event_type": "non_blocking", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+                {
+                    "correlation_id": "pg-lt4",
+                    "event_type": "non_blocking",
+                    "level": "INFO",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                }
             )
             assert isinstance(event_id, int)
         finally:
@@ -576,7 +608,12 @@ class TestPostgresJSONB:
     def test_empty_payload_defaults_to_empty_dict(self, store):
         """Si no se proporciona payload, se almacena como {}."""
         store.insert_event(
-            {"correlation_id": "pg-json3", "event_type": "no_payload", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+            {
+                "correlation_id": "pg-json3",
+                "event_type": "no_payload",
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:00+00:00",
+            }
         )
         trace = store.get_trace("pg-json3")
         assert trace[0]["payload"] == {}
@@ -603,7 +640,12 @@ class TestPostgresConnectionPool:
         """El pool sirve correctamente múltiples operaciones secuenciales."""
         for i in range(50):
             store.insert_event(
-                {"correlation_id": f"pg-pool-{i}", "event_type": "seq", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+                {
+                    "correlation_id": f"pg-pool-{i}",
+                    "event_type": "seq",
+                    "level": "INFO",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                }
             )
         events = store.list_events(limit=100)
         assert len(events) == 50
@@ -615,13 +657,23 @@ class TestPostgresConnectionPool:
         for i in range(20):
             try:
                 store.insert_event(
-                    {"correlation_id": f"pg-pool-err-{i}", "event_type": "x", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+                    {
+                        "correlation_id": f"pg-pool-err-{i}",
+                        "event_type": "x",
+                        "level": "INFO",
+                        "timestamp": "2026-01-01T00:00:00+00:00",
+                    }
                 )
             except Exception:
                 pass
         # El pool sigue funcionando
         event_id = store.insert_event(
-            {"correlation_id": "pg-pool-ok", "event_type": "ok", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
+            {
+                "correlation_id": "pg-pool-ok",
+                "event_type": "ok",
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:00+00:00",
+            }
         )
         assert event_id > 0
 
@@ -632,7 +684,7 @@ class TestPostgresRowConversion:
     def test_row_to_event_dict_with_datetime_timestamp(self):
         """Convierte datetime a ISO format."""
         from datetime import datetime, timezone
-        
+
         row = {
             "id": 1,
             "correlation_id": "test",
@@ -664,7 +716,7 @@ class TestPostgresRowConversion:
     def test_row_to_run_dict_with_datetime_fields(self):
         """Convierte datetime a ISO format en runs."""
         from datetime import datetime, timezone
-        
+
         row = {
             "run_id": "run-1",
             "started_at": datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
@@ -693,9 +745,7 @@ class TestPostgresEdgeCases:
         funciona pero en producción cada evento debería tener un
         correlation_id único para evitar mezclar trazas no relacionadas.
         """
-        event_id = store.insert_event(
-            {"event_type": "minimal", "level": "INFO"}
-        )
+        event_id = store.insert_event({"event_type": "minimal", "level": "INFO"})
         assert event_id > 0
         trace = store.get_trace("")
         assert len(trace) == 1
@@ -735,7 +785,12 @@ class TestPostgresEdgeCases:
             {"correlation_id": "pg-edge3", "event_type": "a", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
         )
         store.insert_event(
-            {"correlation_id": "pg-edge4", "event_type": "b", "level": "ERROR", "timestamp": "2026-01-01T00:00:01+00:00"}
+            {
+                "correlation_id": "pg-edge4",
+                "event_type": "b",
+                "level": "ERROR",
+                "timestamp": "2026-01-01T00:00:01+00:00",
+            }
         )
         events = store.list_events(limit=100)
         assert len(events) == 2

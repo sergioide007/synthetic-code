@@ -1,5 +1,7 @@
 # Código Sintético — código de referencia
 
+[![CI](https://github.com/sergioide007/synthetic-code/actions/workflows/ci.yml/badge.svg)](https://github.com/sergioide007/synthetic-code/actions/workflows/ci.yml)
+
 Implementación de referencia para el libro **Código Sintético**: patrones de
 producción para sistemas multiagente (orquestación eficiente, calidad
 autónoma en CI/CD, código autolimpiable y arquitecturas resilientes),
@@ -15,7 +17,7 @@ src/
   trazabilidad/     Logger estructurado + agente ReAct con trazabilidad
   sintetico_api/    API FastAPI + dashboard de observabilidad (Swagger incluido)
 demos/              Scripts ejecutables por consola, uno por caso de uso
-tests/              Suite de pytest (72+ tests; ver "Testing" abajo)
+tests/              Suite de pytest (188 tests; ver "Testing" abajo)
 notebooks/          Notebooks de Colab
 ```
 
@@ -92,6 +94,21 @@ real configurada, ese mismo panel invoca el modelo real.
 pip install -e ".[dev,api]"
 pytest tests/ -v
 ```
+
+Sin Redis ni Postgres, los tests que los necesitan se **omiten** (no fallan):
+quedan 113–115 tests ejecutados. Para correr la suite completa, igual que el CI:
+
+```bash
+pip install -e ".[all,dev]"
+export SINTETICO_TEST_REDIS_URL=redis://localhost:6379/0
+export SINTETICO_TEST_POSTGRES_URL=postgresql://sintetico:sintetico@localhost:5432/sintetico_test
+pytest tests/ --cov=sintetico --cov=trazabilidad --cov=sintetico_api --cov-report=term
+```
+
+**Resultado medido** (Python 3.12, Redis 7 y Postgres 16 reales): 188 tests
+pasan; cobertura de líneas 81 % (2413 sentencias). Los módulos con menor
+cobertura son `economics` (33 %), `reasoning` (34 %), `real_providers` (45 %)
+y `debugging` (46 %); mejorarlos es trabajo pendiente, no algo ya cubierto.
 
 La suite cubre: presupuesto (local y Redis), orquestación, calidad
 (auto-limpieza de código, TrustScore), resiliencia (circuit breakers),

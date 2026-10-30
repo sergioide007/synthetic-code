@@ -64,7 +64,8 @@ jobs:
         run: |
           pytest tests/ -v \
             --cov=sintetico --cov=trazabilidad --cov=sintetico_api \
-            --cov-report=term-missing --cov-report=xml
+            --cov-report=term-missing --cov-report=xml \
+            --cov-fail-under=75
 
       - name: Publicar reporte de cobertura como artefacto
         uses: actions/upload-artifact@v4
@@ -86,14 +87,8 @@ jobs:
         run: pip install ruff
       - name: "Ruff check (bloqueante: bugs reales como imports/nombres sin usar)"
         run: ruff check src/ tests/ demos/
-      - name: Ruff format --check (informativo)
-        # No bloqueante: el código se escribió y verificó en un entorno sin
-        # acceso a red donde `ruff format` no se pudo ejecutar para
-        # confirmar el cumplimiento exacto del estilo. Se deja como señal
-        # informativa hasta que alguien lo ejecute una vez con red y, si
-        # hace falta, aplique `ruff format .` y quite este comentario.
+      - name: Ruff format --check (bloqueante)
         run: ruff format --check src/ tests/ demos/
-        continue-on-error: true
 
   smoke-test-server:
     name: Smoke test del servidor (uvicorn real)

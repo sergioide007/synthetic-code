@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "Si usas este código de referencia, cítalo con estos datos."
+title: "Código Sintético — código de referencia"
+type: software
+version: 2.0.0
+license: MIT
+repository-code: "https://github.com/sergioide007/synthetic-code"
+url: "https://codigosintetico.specsolid.com"
+authors:
+  - family-names: "Perez Ruiz"
+    given-names: "Sergio"
+# Tras crear un release en GitHub y activar Zenodo, agrega aquí:
+# doi: "10.5281/zenodo.XXXXXXX"
+# date-released: "AAAA-MM-DD"
