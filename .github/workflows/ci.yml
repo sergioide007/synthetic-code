@@ -15,15 +15,15 @@ env:
   # SDK injected into sys.modules): no real API key is needed for this
   # workflow to pass.
   SINTETICO_API_DB_PATH: ci_traces.db
-  # Postgres for the PostgresTraceStore tests (service defined below)
-  SINTETICO_TEST_POSTGRES_URL: postgresql://sintetico:sintetico@localhost:5432/sintetico_test
-  # Redis for the RedisBudgetBackend tests (service defined below)
-  SINTETICO_TEST_REDIS_URL: redis://localhost:6379/0
 
 jobs:
   test:
     name: Tests (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    env:
+      # Only this job runs the Postgres and Redis services, so only it points the tests at them.
+      SINTETICO_TEST_POSTGRES_URL: postgresql://sintetico:sintetico@localhost:5432/sintetico_test
+      SINTETICO_TEST_REDIS_URL: redis://localhost:6379/0
     services:
       postgres:
         image: postgres:16

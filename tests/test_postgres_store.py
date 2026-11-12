@@ -81,13 +81,18 @@ class TestPostgresSchema:
         assert expected_indexes.issubset(actual_indexes)
 
     def test_reinitialization_is_idempotent(self):
-        """Crear un segundo PostgresTraceStore con el mismo DSN no falla
-        (el esquema ya existe)."""
+        """Creating a second PostgresTraceStore with the same DSN does not fail
+        (the schema already exists)."""
+        # Same guards as the `store` fixture: a job may define the URL without
+        # installing the driver or running a database (e.g. the CI quality job).
+        psycopg2 = pytest.importorskip("psycopg2", reason="psycopg2 no instalado")
         dsn = os.environ.get("SINTETICO_TEST_POSTGRES_URL")
         if not dsn:
             pytest.skip("SINTETICO_TEST_POSTGRES_URL no definido")
-        
-        store1 = PostgresTraceStore(dsn)
+        try:
+            store1 = PostgresTraceStore(dsn)
+        except psycopg2.OperationalError as exc:
+            pytest.skip(f"Postgres no accesible en SINTETICO_TEST_POSTGRES_URL: {exc}")
         store2 = PostgresTraceStore(dsn)  # No debe fallar
         store1.close()
         store2.close()
