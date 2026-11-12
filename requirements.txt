@@ -1,11 +1,11 @@
-# Instalación mínima (sin APIs reales, sólo patrones + demos con MockProvider):
+# Minimal install (no real APIs, only the patterns + demos with MockProvider):
 #   pip install -e .
 #
-# Instalación completa (recomendada para seguir el libro):
+# Full install (recommended to follow the book):
 #   pip install -e ".[all]"
 #
-# Este fichero se mantiene por compatibilidad con `pip install -r requirements.txt`;
-# la fuente de verdad de las dependencias es pyproject.toml.
+# This file is kept for compatibility with `pip install -r requirements.txt`;
+# the source of truth for the dependencies is pyproject.toml.
 anthropic>=0.40
 openai>=1.50
 requests>=2.31

@@ -1,16 +1,16 @@
 # Notebooks
 
-Ambos notebooks están regenerados para instalar el paquete real del
-repositorio (`pip install -e ".[all]"` tras `git clone`) e importar desde
-`sintetico`/`trazabilidad`, en vez de pegar código o rutas de ficheros
-sueltas como en versiones anteriores.
+These two notebooks belong to the Spanish edition of the book (*Código sintético*): their prose is in Spanish, the code
+is the same `sintetico` package. English-speaking readers should start with [`examples/`](../examples), which covers
+the same ground and is tested in CI.
 
-- `codigo_sintetico_colab.ipynb`: instalación, suite de tests, los 4
-  pilares, demo de ahorro con API real (opcional), y cómo arrancar el
-  dashboard de observabilidad desde Colab.
-- `codigo_sintetico_trazabilidad.ipynb`: logger estructurado + agente
-  ReAct, con proveedor real si configuras una API key o un simulador
-  determinista si no.
+Both install the real package from the repository (`pip install -e ".[all]"` after `git clone`) and import from
+`sintetico` / `trazabilidad`.
 
-**Antes de usarlos**, edita la celda con `REPO_URL = "https://github.com/<tu-usuario>/<tu-repo>.git"`
-al inicio de cada uno y pon la URL real de tu fork/repo.
+- `codigo_sintetico_colab.ipynb`: installation, test suite, the four pillars, a savings demo against a real API
+  (optional), and how to start the observability dashboard from Colab.
+- `codigo_sintetico_trazabilidad.ipynb`: structured logger + ReAct agent, with a real provider if you configure an API
+  key, or a deterministic simulator if you do not.
+
+**Before using them**, edit the cell with `REPO_URL = "https://github.com/<your-user>/<your-repo>.git"` at the top of
+each notebook and set the URL of your fork.

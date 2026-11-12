@@ -1,0 +1,6 @@
+# One line-ending convention on every platform (the shell scripts and the hashed fixtures need LF).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.epub binary

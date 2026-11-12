@@ -1,12 +1,28 @@
+# Python
 .venv/
 __pycache__/
 *.pyc
-.pytest_cache/
-.env
-.coverage
 *.egg-info/
+build/
 dist/
-*.db
-coverage.xml
+
+# Test, lint and type-check caches
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+.mypy_cache/
 .coverage
+coverage.xml
+htmlcov/
+
+# Secrets and local configuration
 .env
+
+# Files written by the examples, demos and the API when run locally
+audit.jsonl
+*.db
+results.json
+
+# The book itself (manuscript, figures, EPUB/PDF builds) is not part of this repository:
+# it is a commercial work and holds personal data. Only the companion code is published here.
+book/

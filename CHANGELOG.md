@@ -1,0 +1,45 @@
+# Changelog
+
+## 2.2.1 (2026-11-12)
+### Changed
+- Docstrings and comments of the core modules (`budget`, `governance`, `orchestration`, `quality`, `security`, ...) translated to English; code unchanged (checked by comparing syntax trees).
+- `pyproject.toml`: English description, keywords, classifiers and project URLs. `CITATION.cff`, `.env.example`, `requirements.txt`, CI step names and `notebooks/README.md` in English.
+- README: table of the eleven examples, Windows commands, repository layout and a note on which parts are still in Spanish.
+- `.gitignore` covers the files the examples write (`audit.jsonl`, `*.db`) and tool caches; `.gitattributes` fixes line endings to LF.
+### Fixed
+- `examples/10_semantic_cache.py` failed without FAISS; it now falls back to the exact NumPy cache.
+- `test_audit_chain_survives_concurrent_processes` failed on Windows (no `fork`); it is now skipped there, as documented.
+- 18 lint findings in the tests (unused imports and variables).
+
+## 2.2.0
+### Added
+- `structured` + `reasoning_resilient`: `AgentStep`, `Hypothesis`/`HypothesisBatch` (Pydantic), `complete_structured` (validate + re-ask with the errors, native hooks for Anthropic/OpenAI), `ReActAgentResilient` (three-layer loop protection) and `TreeOfThoughtsResilient`.
+- `semantic_cache`: `HashingEmbedder`, `EmbeddingSemanticCache` (exact linear baseline) and `HighConcurrencySemanticCache` (FAISS flat -> IVF, readers-writer lock, LRU + TTL by tombstones, automatic rebuild).
+- `distributed`: `InMemoryBus`, `KafkaBus` (confluent-kafka), `AgentWorker` (at-least-once, retries with backoff, DLQ, dedupe, deadlines), `DistributedAIGateway`, `react_handler`.
+- Examples 09-11, `docker/kafka-compose.yml`, `scripts/bench_semantic_cache.py`, CI job against a real Kafka broker, extras `structured`, `faiss`, `kafka`.
+- `docs/BOOK_ERRATA.md`: where the book overstates or misdescribes these classes, with measurements.
+### Fixed
+- `TreeOfThoughts._default_evaluator` used salted `hash()` (not reproducible between runs); now SHA-256.
+- `import sintetico` and `from sintetico import *` work with no optional dependency installed.
+## 2.1.0
+### Added
+- `sintetico` command-line tool (`gate`, `eval`, `audit-verify`, `evidence-verify`, `iac-review`, `admission-serve`) with CI-friendly exit codes.
+- `AgentAuditLogger`: HMAC-chained, tamper-evident audit log with JSONL persistence and verification.
+- `AIGateway`, `AIGatewayWithProjects`, `ContextBudgetManager`: routing by complexity, per-team and per-project budgets, audit.
+- `EvalSet`, `CostOptimizerWithEvals`; `DomainRiskProfile`/`compute_max_allowed_autonomy`; `DynamicThresholdRACIGate`.
+- `DeployGate`, `AgentArchitectureReviewer`, `ProductionPipeline`, `SwarmOrchestrator`; `CodeReviewAgent` and review patterns; `DetectionGuard`.
+- `PromptAdapter`, `OutputAdapter`, `CapabilityProfile`; `DocumentGenerator`, `ADRGenerator`, `ADRArchive`.
+- `sintetico.devops` (book Part VI): compliance evidence, residency policy, IaC review, incident toolbox + DLQ replay, supervised migration, GitOps trust webhook.
+- Eight offline runnable examples; 227 new tests (suite total: 415 with real services).
+- Verification tooling: `scripts/verify.sh`, `scripts/mutation_check.py`, `scripts/check_model_registry.py`, `scripts/verify_{audit,evidence}_with_openssl.sh`, `docs/VERIFICATION.md`, SBOM and dependency-audit reports.
+- `AgentAuditLogger.head` / `verify(expected_head=...)` to detect truncation; `AuditCorruptionError`.
+- CI `quality` job (ruff, mypy, bandit, pip-audit, independent verifiers).
+### Fixed
+- Evidence store overwrite race; audit log forking across processes and corruption after a crash; unbounded webhook body; webhook blocking `DELETE`.
+- `extract_json` recursion/quadratic behaviour; IaC review gaps (modern security-group rules, protocol `-1`, IPv6, unknown protocol, burst-window minutes).
+- Model registry ids and prices updated from the vendor documentation (verify with `scripts/check_model_registry.py`).
+- Two tests that failed without `redis-py`; `hypothesis` added to the `dev` extras.
+### Changed
+- `ShadowAgent` heuristics now understand English as well as Spanish model output.
+- `MPCHost` renamed to `MCPHost` (the old name remains as an alias).
+- English `README.md`; the previous Spanish README is now `README.es.md`.
