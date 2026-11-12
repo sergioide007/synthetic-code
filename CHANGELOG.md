@@ -2,6 +2,7 @@
 
 ## Unreleased
 ### Added
+- Zenodo archive and DOI ([10.5281/zenodo.24161299](https://doi.org/10.5281/zenodo.24161299)): badge and "How to cite" in the READMEs, `doi`, `identifiers`, `abstract` and `keywords` in `CITATION.cff`.
 - `SECURITY.md` (private vulnerability reporting), `CONTRIBUTING.md`, Dependabot for pip and GitHub Actions, CodeQL workflow.
 ### Changed
 - CI tests Python 3.13 as well; workflow token restricted to read-only (`permissions: contents: read`).

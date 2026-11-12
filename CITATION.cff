@@ -1,5 +1,13 @@
 cff-version: 1.2.0
 message: "If you use this reference code, please cite it with the data below."
+abstract: "Production patterns for systems built with AI agents: budgets and routing, tamper-evident audit logs, evals as a CI gate, bounded autonomy, supervised migrations and compliance evidence. Companion code of the book Synthetic Code: The Art of Orchestrating AI Agents."
+keywords:
+  - ai-agents
+  - multi-agent-systems
+  - llm
+  - devsecops
+  - audit-log
+  - evals
 title: "Synthetic Code: reference implementation"
 type: software
 version: 2.2.1
@@ -10,6 +18,12 @@ url: "https://codigosintetico.specsolid.com"
 authors:
   - family-names: "Perez Ruiz"
     given-names: "Sergio"
-# After creating a GitHub release and enabling Zenodo, add:
-# doi: "10.5281/zenodo.XXXXXXX"
+doi: "10.5281/zenodo.24161299"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.24161299"
+    description: "Concept DOI: all versions, resolves to the latest"
+  - type: doi
+    value: "10.5281/zenodo.24161300"
+    description: "Version 2.2.1"
 

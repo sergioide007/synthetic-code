@@ -2,6 +2,8 @@
 
 > 🇬🇧 English documentation: [README.md](README.md)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24161299.svg)](https://doi.org/10.5281/zenodo.24161299)
+
 ## Novedades de la v2.1 (guía rápida para proyectos reales)
 
 La versión 2.1 añade los patrones de las Partes II–VI de la edición inglesa del libro **Synthetic Code**:
@@ -164,6 +166,14 @@ Ver [`.env.example`](.env.example). Las más relevantes:
 | `SINTETICO_MODEL_HAIKU/SONNET/OPUS` | Sobreescriben el id de modelo real sin tocar código |
 | `SINTETICO_API_DB_PATH` | Ruta del SQLite de trazas de la API (por defecto `sintetico_traces.db`) |
 | `REDIS_HOST` / `REDIS_PORT` | Backend distribuido de presupuesto |
+
+## Cómo citar
+
+> Perez Ruiz, S. (2026). *Synthetic Code: reference implementation* [Software]. Zenodo.
+> https://doi.org/10.5281/zenodo.24161299
+
+Ese DOI (concepto) apunta siempre a la última versión; el de la v2.2.1 es
+[10.5281/zenodo.24161300](https://doi.org/10.5281/zenodo.24161300).
 
 ## Licencia
 

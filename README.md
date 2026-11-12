@@ -1,6 +1,7 @@
 # Synthetic Code — reference implementation
 
 [![CI](https://github.com/sergioide007/synthetic-code/actions/workflows/ci.yml/badge.svg)](https://github.com/sergioide007/synthetic-code/actions)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24161299.svg)](https://doi.org/10.5281/zenodo.24161299)
 
 Production patterns for systems built with **AI agents**: budgets and routing, tamper-evident audit logs,
 evals as a CI gate, bounded autonomy, supervised migrations, compliance evidence. It is the companion code of the
@@ -183,6 +184,17 @@ pytest -q                      # Redis/Postgres tests skip unless SINTETICO_TEST
 ```
 
 CI (`.github/workflows/ci.yml`) starts real Redis and PostgreSQL services and runs everything on Python 3.10–3.13. A CodeQL job scans Python, JavaScript and the workflows; Dependabot proposes dependency updates weekly.
+
+## How to cite
+
+The code is archived on Zenodo. Cite the concept DOI, which always resolves to the latest version:
+
+> Perez Ruiz, S. (2026). *Synthetic Code: reference implementation* [Computer software]. Zenodo.
+> https://doi.org/10.5281/zenodo.24161299
+
+To cite the exact version you used, take its own DOI from the Zenodo record (v2.2.1:
+[10.5281/zenodo.24161300](https://doi.org/10.5281/zenodo.24161300)). GitHub's **Cite this repository** button reads
+[CITATION.cff](CITATION.cff).
 
 ## Contributing and security
 
