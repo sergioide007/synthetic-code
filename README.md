@@ -8,7 +8,7 @@ book *Synthetic Code: The Art of Orchestrating AI Agents*, but it is a normal Py
 
 * **Offline by default.** Every pattern and every example runs without an API key (deterministic mock provider).
 * **No mandatory dependencies** for the core patterns; real providers, Redis, Postgres and the dashboard are optional extras.
-* **Tested, and the tests were tested.** 565 tests (real Redis + PostgreSQL in CI; a real-Kafka job too), Python 3.10 – 3.13 (CI matrix: 3.10-3.12; 3.13 verified locally), property-based tests, 91 % mutation score across 15 security- and concurrency-relevant modules, third-party checks (`jq`+`openssl`, OpenTofu, Kubernetes types). See [docs/VERIFICATION.md](docs/VERIFICATION.md) — including what was **not** verified.
+* **Tested, and the tests were tested.** 565 tests (real Redis + PostgreSQL in CI; a real-Kafka job too), Python 3.10 – 3.13 (all four in the CI matrix), property-based tests, 91 % mutation score across 15 security- and concurrency-relevant modules, third-party checks (`jq`+`openssl`, OpenTofu, Kubernetes types). See [docs/VERIFICATION.md](docs/VERIFICATION.md) — including what was **not** verified.
 * 🇪🇸 Documentación en español: [README.es.md](README.es.md)
 
 > **Reference code, not a certified product.** Read it, test it in your environment, and have your security, legal and
@@ -182,9 +182,10 @@ pip install -e ".[dev,api]"
 pytest -q                      # Redis/Postgres tests skip unless SINTETICO_TEST_REDIS_URL / _POSTGRES_URL are set
 ```
 
-CI (`.github/workflows/ci.yml`) starts real Redis and PostgreSQL services and runs everything on Python 3.10–3.12.
+CI (`.github/workflows/ci.yml`) starts real Redis and PostgreSQL services and runs everything on Python 3.10–3.13. A CodeQL job scans Python, JavaScript and the workflows; Dependabot proposes dependency updates weekly.
 
-## Contributing
+## Contributing and security
 
-Issues and pull requests are welcome. Please add a test with every change and keep examples runnable offline.
+Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately as
+described in [SECURITY.md](SECURITY.md), never in a public issue.
 Licence: see [LICENSE.txt](LICENSE.txt).

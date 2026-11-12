@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+### Added
+- `SECURITY.md` (private vulnerability reporting), `CONTRIBUTING.md`, Dependabot for pip and GitHub Actions, CodeQL workflow.
+### Changed
+- CI tests Python 3.13 as well; workflow token restricted to read-only (`permissions: contents: read`).
+
 ## 2.2.1 (2026-11-12)
 ### Changed
 - Docstrings and comments of the core modules (`budget`, `governance`, `orchestration`, `quality`, `security`, ...) translated to English; code unchanged (checked by comparing syntax trees).
