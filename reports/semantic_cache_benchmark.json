@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "python": "3.12.3",
+    "faiss": "1.15.1",
+    "numpy": "2.4.4",
+    "cpus": 1,
+    "machine": "x86_64",
+    "note": "search cost only (embeddings precomputed); noisy-copy queries; see scripts/bench_semantic_cache.py"
+  },
+  "results": [
+    {
+      "entries": 100,
+      "dim": 384,
+      "python-loop": {
+        "p50_ms": 0.198,
+        "p95_ms": 0.27,
+        "p99_ms": 0.299,
+        "recall_at_1": 1.0,
+        "fill_s": 0.0,
+        "qps_8_threads": 5549
+      },
+      "numpy": {
+        "p50_ms": 0.02,
+        "p95_ms": 0.031,
+        "p99_ms": 0.072,
+        "recall_at_1": 1.0,
+        "fill_s": 0.0,
+        "qps_8_threads": 39421
+      },
+      "faiss": {
+        "p50_ms": 0.04,
+        "p95_ms": 0.077,
+        "p99_ms": 0.135,
+        "recall_at_1": 1.0,
+        "fill_s": 0.0,
+        "qps_8_threads": 21690,
+        "index": "flat"
+      }
+    },
+    {
+      "entries": 1000,
+      "dim": 384,
+      "python-loop": {
+        "p50_ms": 1.055,
+        "p95_ms": 1.945,
+        "p99_ms": 2.012,
+        "recall_at_1": 1.0,
+        "fill_s": 0.01,
+        "qps_8_threads": 684
+      },
+      "numpy": {
+        "p50_ms": 0.067,
+        "p95_ms": 0.117,
+        "p99_ms": 0.19,
+        "recall_at_1": 1.0,
+        "fill_s": 0.01,
+        "qps_8_threads": 12967
+      },
+      "faiss": {
+        "p50_ms": 0.087,
+        "p95_ms": 0.181,
+        "p99_ms": 0.218,
+        "recall_at_1": 1.0,
+        "fill_s": 0.02,
+        "qps_8_threads": 8168,
+        "index": "flat"
+      }
+    },
+    {
+      "entries": 10000,
+      "dim": 384,
+      "python-loop": {
+        "p50_ms": 13.562,
+        "p95_ms": 20.735,
+        "p99_ms": 22.05,
+        "recall_at_1": 1.0,
+        "fill_s": 0.08,
+        "qps_8_threads": 63
+      },
+      "numpy": {
+        "p50_ms": 0.833,
+        "p95_ms": 1.347,
+        "p99_ms": 1.487,
+        "recall_at_1": 1.0,
+        "fill_s": 0.07,
+        "qps_8_threads": 809
+      },
+      "faiss": {
+        "p50_ms": 0.471,
+        "p95_ms": 0.633,
+        "p99_ms": 0.789,
+        "recall_at_1": 0.98,
+        "fill_s": 0.48,
+        "qps_8_threads": 2824,
+        "index": "ivf"
+      }
+    },
+    {
+      "entries": 50000,
+      "dim": 384,
+      "python-loop": {
+        "p50_ms": 100.998,
+        "p95_ms": 114.97,
+        "p99_ms": 116.608,
+        "recall_at_1": 1.0,
+        "fill_s": 0.51,
+        "qps_8_threads": 15
+      },
+      "numpy": {
+        "p50_ms": 8.232,
+        "p95_ms": 9.565,
+        "p99_ms": 11.109,
+        "recall_at_1": 1.0,
+        "fill_s": 0.39,
+        "qps_8_threads": 118
+      },
+      "faiss": {
+        "p50_ms": 1.1,
+        "p95_ms": 2.089,
+        "p99_ms": 2.27,
+        "recall_at_1": 0.95,
+        "fill_s": 2.27,
+        "qps_8_threads": 845,
+        "index": "ivf"
+      }
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 """
-sintetico.providers — Patrón Backend-Agnostic para proveedores de LLM
-(Capítulo 19).
+sintetico.providers — Backend-Agnostic pattern for LLM providers
+(Chapter 19).
 
-Define el contrato `LLMProvider` que desacopla el resto del sistema del
-SDK concreto (Anthropic, OpenAI, un servidor local, etc.). Las
-implementaciones *reales* que hablan con APIs externas viven en
-`sintetico.real_providers` para no forzar `anthropic`/`openai`/`requests`
-como dependencias duras de este módulo base.
+Defines the `LLMProvider` contract that decouples the rest of the system
+from the concrete SDK (Anthropic, OpenAI, a local server, etc.). The
+*real* implementations that talk to external APIs live in
+`sintetico.real_providers`, so that `anthropic`/`openai`/`requests` are
+not hard dependencies of this base module.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class LLMResponse:
 
 
 class LLMProvider(ABC):
-    """Contrato que debe cumplir cualquier proveedor de modelo de lenguaje."""
+    """Contract that every language-model provider must fulfil."""
 
     @abstractmethod
     def complete(self, request: LLMRequest) -> LLMResponse: ...
@@ -50,17 +50,17 @@ class LLMProvider(ABC):
     @property
     @abstractmethod
     def cost_per_million_tokens(self) -> float:
-        """Coste aproximado de entrada, usado sólo para estimaciones rápidas.
+        """Approximate input cost, used only for quick estimates.
 
-        Para coste real por llamada, usar `get_last_cost()` en los
-        proveedores reales, que combina el precio de entrada y salida con
-        el `usage` efectivamente reportado por la API.
+        For the real cost of a call, use `get_last_cost()` on the real
+        providers, which combines the input and output prices with the
+        `usage` actually reported by the API.
         """
 
 
 class MockProvider(LLMProvider):
-    """Proveedor determinista sin dependencias externas, para tests y demos
-    offline. No debe usarse para medir ahorro de costes real."""
+    """Deterministic provider with no external dependencies, for tests and
+    offline demos. It must not be used to measure real cost savings."""
 
     def complete(self, request: LLMRequest) -> LLMResponse:
         preview = request.system_prompt[:30]
@@ -76,11 +76,11 @@ class MockProvider(LLMProvider):
 
 
 class AllProvidersFailedError(RuntimeError):
-    """Se lanza cuando el proveedor principal y todos los de respaldo fallan."""
+    """Raised when the primary provider and every fallback fail."""
 
 
 class BackendAgnosticAgent:
-    """Agente que delega en un `LLMProvider` intercambiable, con fallback."""
+    """Agent that delegates to a swappable `LLMProvider`, with fallback."""
 
     def __init__(self, provider: LLMProvider, fallback_providers: Optional[List[LLMProvider]] = None):
         self.provider = provider
@@ -92,7 +92,7 @@ class BackendAgnosticAgent:
         for provider in [self.provider, *self.fallback_providers]:
             try:
                 return provider.complete(request)
-            except Exception as exc:  # noqa: BLE001 - queremos capturar cualquier fallo de proveedor
+            except Exception as exc:  # noqa: BLE001 - any provider failure must be caught here
                 errors.append(f"{type(provider).__name__}: {exc}")
         raise AllProvidersFailedError("Todos los proveedores fallaron: " + "; ".join(errors))
 

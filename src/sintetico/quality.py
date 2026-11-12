@@ -1,7 +1,7 @@
 """
-sintetico.quality — Autolimpieza de código, TrustScore, validación
-adversarial (ShadowAgent) y seguimiento de deuda técnica
-(Capítulos 5, 6 y 11).
+sintetico.quality — self-cleaning code, TrustScore, adversarial
+validation (ShadowAgent) and technical-debt tracking
+(Chapters 5, 6 and 11).
 """
 
 from __future__ import annotations
@@ -52,8 +52,8 @@ class CodeSmell:
 
 
 class AgentAnalyzer:
-    """Detector determinista de smells simples, usado como puerta barata
-    antes de invocar a un LLM para el análisis semántico completo."""
+    """Deterministic detector of simple smells, used as a cheap gate
+    before an LLM is invoked for the full semantic analysis."""
 
     def analyze(self, code: str) -> List[CodeSmell]:
         smells = []
@@ -72,14 +72,14 @@ class AgentAnalyzer:
 
 
 class AgentRefactor:
-    """Refactorizador determinista para el smell DUPLICATE_CODE detectado
-    por `AgentAnalyzer`.
+    """Deterministic refactorer for the DUPLICATE_CODE smell detected by
+    `AgentAnalyzer`.
 
-    Sustituye únicamente las *llamadas* a `print(...)` por `_log(...)` y
-    antepone la definición de `_log`. A diferencia de la v1 (que hacía
-    `code.replace("print", "def log(msg): print(msg)")` e insertaba una
-    definición de función completa en cada punto de llamada, generando
-    código sintácticamente inválido), esto produce siempre código válido.
+    It replaces only the *calls* to `print(...)` with `_log(...)` and
+    prepends the definition of `_log`. Unlike v1 (which did
+    `code.replace("print", "def log(msg): print(msg)")` and inserted a
+    whole function definition at every call site, producing syntactically
+    invalid code), this always produces valid code.
     """
 
     _HELPER = "def _log(msg):\n    print(msg)\n\n\n"
@@ -94,8 +94,8 @@ class AgentRefactor:
 
 
 class AgentTests:
-    """Genera una prueba de regresión mínima que verifica que el
-    refactor no eliminó el comportamiento observable esperado."""
+    """Generates a minimal regression test that checks the refactor did
+    not remove the expected observable behavior."""
 
     def generate_regression_tests(self, original_code: str, refactored_code: str) -> str:
         return (
@@ -105,9 +105,9 @@ class AgentTests:
 
 
 class SelfCleaningCodeLoop:
-    """Bucle de autolimpieza con validación estática imperativa (compile())
-    antes y después de cada refactor, para evitar ciclos innecesarios de
-    LLM ante errores puramente sintácticos."""
+    """Self-cleaning loop with imperative static validation (compile())
+    before and after each refactor, to avoid needless LLM cycles on
+    purely syntactic errors."""
 
     def __init__(self, max_iterations: int = 3):
         self.max_iterations = max_iterations
@@ -152,7 +152,7 @@ class SelfCleaningCodeLoop:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# TrustScore y ShadowAgent
+# TrustScore and ShadowAgent
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -194,8 +194,8 @@ class ShadowDecision:
 
 
 class ShadowAgent:
-    """Validador adversarial/de consistencia/de restricciones que audita
-    la salida de un agente principal antes de que se considere definitiva."""
+    """Adversarial / consistency / constraints validator that audits the
+    output of a primary agent before it is considered final."""
 
     def __init__(
         self,
@@ -218,12 +218,12 @@ class ShadowAgent:
 
     def _adversarial_validate(self, task: str, output: str) -> ShadowDecision:
         response = self.llm_call(f"Refuta esta solución. Tarea: {task}. Output: {output}")
-        if "no problemas" in response.lower():
+        if any(p in response.lower() for p in ("no problemas", "no problems", "no issues", "no flaws", "no weaknesses")):
             return ShadowDecision(ShadowVerdict.APPROVE, "Sin fallos encontrados", 0.9, [])
         return ShadowDecision(ShadowVerdict.REJECT, "Debilidades encontradas", 0.7, ["Posible fallo"])
 
     def _consistency_validate(self, output: str) -> ShadowDecision:
-        if "contradicción" in output.lower():
+        if any(p in output.lower() for p in ("contradicción", "contradiccion", "contradiction", "inconsistent")):
             return ShadowDecision(ShadowVerdict.REJECT, "Inconsistencia detectada", 0.8, [])
         return ShadowDecision(ShadowVerdict.APPROVE, "Coherente", 0.85, [])
 
@@ -235,7 +235,7 @@ class ShadowAgent:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Deuda técnica y TrustScoreCalculator (con exit codes para CI)
+# Technical debt and TrustScoreCalculator (with exit codes for CI)
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -285,8 +285,8 @@ class TrustScoreResult:
 
 
 class TrustScoreCalculator:
-    """Calcula un score de confianza ponderado y un exit code apto para
-    gates de CI: 0=OK, 1=rechazo por calidad, 2=bloqueo por bug crítico."""
+    """Computes a weighted trust score and an exit code suitable for CI
+    gates: 0=OK, 1=rejected on quality, 2=blocked by a critical bug."""
 
     WEIGHTS = {
         "pass_rate": 0.30,

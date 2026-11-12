@@ -1,0 +1,54 @@
+{
+ "AdmissionReview": {
+  "fields": [
+   "request",
+   "response"
+  ],
+  "required": []
+ },
+ "AdmissionRequest": {
+  "fields": [
+   "uid",
+   "kind",
+   "resource",
+   "subResource",
+   "requestKind",
+   "requestResource",
+   "requestSubResource",
+   "name",
+   "namespace",
+   "operation",
+   "userInfo",
+   "object",
+   "oldObject",
+   "dryRun",
+   "options"
+  ],
+  "required": [
+   "uid",
+   "kind",
+   "resource",
+   "operation",
+   "userInfo"
+  ]
+ },
+ "AdmissionResponse": {
+  "fields": [
+   "uid",
+   "allowed",
+   "status",
+   "patch",
+   "patchType",
+   "auditAnnotations",
+   "warnings"
+  ],
+  "required": [
+   "uid",
+   "allowed"
+  ]
+ },
+ "_provenance": {
+  "source": "https://raw.githubusercontent.com/kubernetes/api/master/admission/v1/types.go",
+  "kubernetes/api_commit": "f4451c0ccd1b"
+ }
+}

@@ -1,14 +1,15 @@
 """
-sintetico.reasoning — Patrones de razonamiento de agentes (Capítulo 4):
-ReAct, Tree of Thoughts y Reflexion.
+sintetico.reasoning — agent reasoning patterns (Chapter 4): ReAct, Tree
+of Thoughts and Reflexion.
 
-Estas clases aceptan un `llm_call: Callable[[str], str]` inyectado para
-mantenerse agnósticas del proveedor real: en producción se les pasa un
-`LLMProvider.complete` envuelto, y en tests/demos un doble determinista.
+These classes take an injected `llm_call: Callable[[str], str]` so that
+they stay agnostic of the real provider: in production they receive a
+wrapped `LLMProvider.complete`, and in tests/demos a deterministic double.
 """
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
 from typing import Callable, List, Optional
@@ -31,11 +32,12 @@ class Observation:
 
 
 class ReActAgent:
-    """Bucle ReAct minimalista con detección de bucles por repetición de acción.
+    """Minimal ReAct loop that detects loops by repeated actions.
 
-    Nota: para un ReAct de producción con parseo robusto, herramientas
-    reales y trazabilidad completa, ver `trazabilidad.agent.ReActAgentWithLogging`.
-    Esta clase es la versión pedagógica y compacta del patrón.
+    Note: for a production ReAct with schema-validated steps and three
+    independent stop conditions see `sintetico.reasoning_resilient`; for
+    full tracing see `trazabilidad.agent.ReActAgentWithLogging`. This
+    class is the compact, teaching version of the pattern.
     """
 
     def __init__(self, max_iterations: int = 10, tool_executor: Optional[Callable[[str, str], Observation]] = None):
@@ -74,12 +76,12 @@ class ThoughtNode:
 
 
 class TreeOfThoughts:
-    """Búsqueda en árbol con poda por beam search (Tree of Thoughts).
+    """Tree search pruned with beam search (Tree of Thoughts).
 
-    `evaluator` permite inyectar una heurística de puntuación real (p. ej.
-    un segundo modelo evaluando cada rama); por defecto usa un hash
-    determinista sólo para que la demo sea reproducible sin llamadas
-    adicionales al LLM.
+    `evaluator` lets you inject a real scoring heuristic (for example a
+    second model that evaluates each branch); by default it uses a
+    deterministic hash, only so that the demo is reproducible with no
+    additional LLM calls.
     """
 
     def __init__(
@@ -90,7 +92,8 @@ class TreeOfThoughts:
 
     @staticmethod
     def _default_evaluator(thought: str, problem: str) -> float:
-        return 0.5 + (hash((thought, problem)) % 10) / 20.0
+        digest = hashlib.sha256(f"{thought}\x00{problem}".encode("utf-8")).digest()   # hash() is salted per process
+        return 0.5 + (digest[0] % 10) / 20.0
 
     def _generate_children(self, node: ThoughtNode, problem: str) -> List[str]:
         response = self.llm_call(f"Genera 3 opciones para: {problem}. Pensamiento actual: {node.thought}")
@@ -127,7 +130,7 @@ class TreeOfThoughts:
 
 
 class ReflexionAgent:
-    """Genera una solución y la refina mediante auto-crítica iterativa."""
+    """Generates a solution and refines it through iterative self-critique."""
 
     def __init__(self, llm_call: Optional[Callable[[str], str]] = None, max_cycles: int = 3):
         self.llm_call = llm_call or (lambda prompt: "Respuesta generada")

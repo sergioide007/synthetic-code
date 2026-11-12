@@ -1,7 +1,7 @@
 """
-sintetico.economics — Utilidades de coste total de propiedad (TCO) y
-retorno de inversión (ROI/ROAS) para justificar decisiones de arquitectura
-con números, no intuición.
+sintetico.economics — total cost of ownership (TCO) and return on
+investment (ROI/ROAS) helpers, to justify architecture decisions with
+numbers rather than intuition.
 """
 
 from __future__ import annotations
@@ -18,11 +18,10 @@ def compute_tco(
     engineer_rate_per_hour: float,
     model_cost_per_million: float,
 ) -> float:
-    """TCO de una llamada/lote: coste de tokens + coste del tiempo humano
-    de verificación. `model_cost_per_million` es un coste combinado
-    (promedio input/output); para precisión por modelo real, sumar los
-    costes de `get_last_cost()` de cada proveedor en vez de usar esta
-    aproximación.
+    """TCO of a call/batch: token cost + cost of the human verification
+    time. `model_cost_per_million` is a blended cost (input/output
+    average); for per-model precision, add up the `get_last_cost()` of
+    each provider instead of using this approximation.
     """
     token_cost = (tokens_input + tokens_output) * model_cost_per_million / 1_000_000
     verification_cost = (verification_time_minutes / 60) * engineer_rate_per_hour

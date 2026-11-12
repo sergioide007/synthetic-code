@@ -1,17 +1,17 @@
 """
-sintetico.real_providers — Integración con APIs reales de LLM.
+sintetico.real_providers — integration with real LLM APIs.
 
-Soporta Anthropic, OpenAI y modelos locales servidos con una interfaz
-compatible con OpenAI (vLLM/Ollama). A diferencia de la v1 del código
-(`real_api_utils.py`), este módulo:
+Supports Anthropic, OpenAI and local models served through an
+OpenAI-compatible interface (vLLM/Ollama). Unlike v1 of this code
+(`real_api_utils.py`), this module:
 
-- Implementa reintentos con backoff exponencial + jitter (la v1 documentaba
-  "maneja reintentos" pero no reintentaba nada).
-- Aplica timeouts explícitos en cada llamada de red.
-- Distingue errores de autenticación, rate limit y longitud de contexto
-  para permitir manejo diferenciado aguas arriba.
-- Resuelve el modelo real a partir de `sintetico.model_registry`, evitando
-  identificadores de modelo hardcodeados que no existen en la API real.
+- Implements retries with exponential backoff + jitter (v1 documented
+  "handles retries" but retried nothing).
+- Applies explicit timeouts to every network call.
+- Distinguishes authentication, rate-limit and context-length errors, so
+  that callers can handle each one differently.
+- Resolves the real model through `sintetico.model_registry`, avoiding
+  hardcoded model identifiers that do not exist in the real API.
 """
 
 from __future__ import annotations
@@ -41,21 +41,21 @@ __all__ = [
 ]
 
 
-# ─── Excepciones ─────────────────────────────────────────────────────
+# ─── Exceptions ──────────────────────────────────────────────────────
 class LLMProviderError(Exception):
-    """Error genérico al comunicarse con un proveedor de LLM."""
+    """Generic error while talking to an LLM provider."""
 
 
 class AuthenticationError(LLMProviderError):
-    """Credenciales ausentes o inválidas. No se debe reintentar."""
+    """Missing or invalid credentials. Must not be retried."""
 
 
 class RateLimitError(LLMProviderError):
-    """Límite de tasa alcanzado. Reintentable con backoff."""
+    """Rate limit reached. Retryable with backoff."""
 
 
 class ContextLengthError(LLMProviderError):
-    """El prompt excede la ventana de contexto del modelo. No reintentable."""
+    """The prompt exceeds the model's context window. Not retryable."""
 
 
 @dataclass
@@ -65,13 +65,13 @@ class RetryConfig:
     max_delay_seconds: float = 20.0
 
     def delay_for(self, attempt: int) -> float:
-        """Backoff exponencial con jitter completo (evita 'thundering herd')."""
+        """Exponential backoff with full jitter (avoids a 'thundering herd')."""
         capped = min(self.max_delay_seconds, self.base_delay_seconds * (2**attempt))
         return random.uniform(0, capped)
 
 
 def _with_retries(fn, retry_config: RetryConfig, retryable_exceptions: tuple):
-    """Ejecuta `fn` reintentando ante excepciones reintentables."""
+    """Run `fn`, retrying on retryable exceptions."""
     last_exc: Optional[Exception] = None
     for attempt in range(retry_config.max_attempts):
         try:
@@ -101,14 +101,14 @@ def _usage_cost(model_id: str, input_tokens: int, output_tokens: int) -> float:
     )
 
 
-# ─── Proveedor Anthropic ──────────────────────────────────────────────
+# ─── Anthropic provider ───────────────────────────────────────────────
 class RealAnthropicProvider(LLMProvider):
-    """Proveedor que llama a la API real de Anthropic.
+    """Provider that calls the real Anthropic API.
 
-    El modelo a usar se resuelve por llamada a partir de `request.model`
-    (si se especifica) o del `default_model` configurado en el
-    constructor; en ambos casos acepta tanto un alias corto ("haiku",
-    "sonnet", "opus") como un id completo de modelo.
+    The model is resolved per call from `request.model` (if given) or from
+    the `default_model` configured in the constructor; in both cases it
+    accepts either a short alias ("haiku", "sonnet", "opus") or a full
+    model id.
     """
 
     def __init__(
@@ -176,6 +176,12 @@ class RealAnthropicProvider(LLMProvider):
             logger.error("Error en Anthropic tras reintentos: %s", exc)
             raise LLMProviderError(f"Anthropic error: {exc}") from exc
 
+    def complete_structured(self, request: LLMRequest, json_schema: dict, name: str = "structured_output") -> LLMResponse:
+        """Native schema-constrained completion (see ``sintetico.structured``). Not live-tested without an API key."""
+        from .structured import anthropic_complete_structured
+
+        return anthropic_complete_structured(self, request, json_schema, name)
+
     @property
     def cost_per_million_tokens(self) -> float:
         return get_model_config(self.default_model).cost_per_million_input
@@ -186,7 +192,7 @@ class RealAnthropicProvider(LLMProvider):
         return _usage_cost(self._last_model_id, self._last_usage["input_tokens"], self._last_usage["output_tokens"])
 
 
-# ─── Proveedor OpenAI ──────────────────────────────────────────────
+# ─── OpenAI provider ───────────────────────────────────────────────
 class RealOpenAIProvider(LLMProvider):
     def __init__(
         self,
@@ -248,6 +254,12 @@ class RealOpenAIProvider(LLMProvider):
             logger.error("Error en OpenAI tras reintentos: %s", exc)
             raise LLMProviderError(f"OpenAI error: {exc}") from exc
 
+    def complete_structured(self, request: LLMRequest, json_schema: dict, name: str = "structured_output") -> LLMResponse:
+        """Native schema-constrained completion (see ``sintetico.structured``). Not live-tested without an API key."""
+        from .structured import openai_complete_structured
+
+        return openai_complete_structured(self, request, json_schema, name)
+
     @property
     def cost_per_million_tokens(self) -> float:
         return get_model_config(self.default_model).cost_per_million_input
@@ -258,7 +270,7 @@ class RealOpenAIProvider(LLMProvider):
         return _usage_cost(self._last_model_id, self._last_usage["input_tokens"], self._last_usage["output_tokens"])
 
 
-# ─── Proveedor Local (vLLM/Ollama, compatible con OpenAI) ────────────
+# ─── Local provider (vLLM/Ollama, OpenAI-compatible) ─────────────────
 class LocalLLMProvider(LLMProvider):
     def __init__(
         self,
@@ -323,7 +335,7 @@ class LocalLLMProvider(LLMProvider):
 
 
 def create_provider(provider_type: str, **kwargs) -> LLMProvider:
-    """Factoría de proveedores. `provider_type` en {"anthropic", "openai", "local", "mock"}."""
+    """Provider factory. `provider_type` is one of {"anthropic", "openai", "local", "mock"}."""
     if provider_type == "anthropic":
         return RealAnthropicProvider(**kwargs)
     if provider_type == "openai":

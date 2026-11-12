@@ -1,10 +1,10 @@
 """
-sintetico.budget — Control de presupuesto de tokens (Capítulo 3).
+sintetico.budget — token budget control (Chapter 3).
 
-Provee una interfaz de backend intercambiable para llevar la cuenta del
-gasto acumulado por equipo, con una implementación en memoria (para tests
-y demos de un solo proceso) y una implementación distribuida sobre Redis
-que garantiza atomicidad "check-and-increment" vía un script Lua.
+Provides a swappable backend interface that keeps track of the spend
+accumulated by each team, with an in-memory implementation (for tests and
+single-process demos) and a distributed implementation on Redis that
+guarantees atomic "check-and-increment" through a Lua script.
 """
 
 from __future__ import annotations
@@ -27,31 +27,31 @@ __all__ = [
 
 
 class RedisUnavailableError(RuntimeError):
-    """Se lanza cuando se intenta operar con un backend Redis sin conexión."""
+    """Raised when a Redis backend is used without a connection."""
 
 
 class BudgetBackend(ABC):
-    """Interfaz para almacenamiento atómico y distribuido del presupuesto."""
+    """Interface for atomic, distributed storage of the budget."""
 
     @abstractmethod
     def get_spent(self, key: str) -> float:
-        """Devuelve el gasto acumulado para `key`."""
+        """Return the spend accumulated for `key`."""
 
     @abstractmethod
     def add_cost(self, key: str, amount: float, limit: float) -> bool:
-        """Intenta añadir `amount` a `key` sin superar `limit`.
+        """Try to add `amount` to `key` without exceeding `limit`.
 
-        Debe ser atómico: si dos llamadas concurrentes verifican el límite
-        a la vez, sólo una de ellas puede tener éxito si juntas lo superan.
+        Must be atomic: if two concurrent calls check the limit at the same
+        time, only one of them may succeed when together they exceed it.
         """
 
 
 class LocalMemoryBudgetBackend(BudgetBackend):
-    """Backend en memoria local con lock para atomicidad en un solo proceso.
+    """Local in-memory backend with a lock, atomic within one process.
 
-    Adecuado para tests, demos y despliegues de un único nodo. No es
-    apto para múltiples procesos/instancias porque el estado no se
-    comparte entre ellos.
+    Suitable for tests, demos and single-node deployments. Not suitable
+    for several processes/instances, because the state is not shared
+    between them.
     """
 
     def __init__(self) -> None:
@@ -72,15 +72,15 @@ class LocalMemoryBudgetBackend(BudgetBackend):
 
 
 class RedisBudgetBackend(BudgetBackend):
-    """Backend distribuido con Redis para control de presupuesto multi-nodo.
+    """Distributed Redis backend for multi-node budget control.
 
-    Usa un script Lua para la operación atómica check-and-increment, de
-    forma que múltiples procesos/instancias compartan un único contador
-    consistente sin condiciones de carrera.
+    Uses a Lua script for the atomic check-and-increment operation, so
+    that several processes/instances share one consistent counter with no
+    race conditions.
 
-    Nota: la clave ya llega formateada desde `TokenBudget` (p. ej.
-    ``"budget:team_id"``), por lo que el prefijo por defecto es vacío
-    para evitar duplicación.
+    Note: the key arrives already formatted from `TokenBudget` (for
+    example ``"budget:team_id"``), so the default prefix is empty to
+    avoid duplicating it.
     """
 
     _INCR_SCRIPT = """
@@ -97,7 +97,7 @@ class RedisBudgetBackend(BudgetBackend):
         self, host: str = "localhost", port: int = 6379, db: int = 0, prefix: str = "", socket_timeout: float = 2.0
     ) -> None:
         try:
-            import redis  # import local para no forzar la dependencia
+            import redis  # local import so the dependency is not mandatory
         except ImportError as exc:
             raise ImportError("Instala redis-py: pip install redis") from exc
 
@@ -142,7 +142,7 @@ class RedisBudgetBackend(BudgetBackend):
             return self._add_cost_with_optimistic_lock(full_key, amount, limit)
 
     def _add_cost_with_optimistic_lock(self, full_key: str, amount: float, limit: float) -> bool:
-        """Fallback con bloqueo optimista (WATCH/MULTI) si el script Lua falla."""
+        """Fallback with optimistic locking (WATCH/MULTI) if the Lua script fails."""
         import redis as redis_module
 
         with self.redis.pipeline() as pipe:
@@ -163,13 +163,13 @@ class RedisBudgetBackend(BudgetBackend):
 
 @dataclass
 class TokenBudget:
-    """Presupuesto mensual de tokens con backend intercambiable (local/Redis).
+    """Monthly token budget with a swappable backend (local/Redis).
 
-    Las alertas progresivas (`alerts_triggered`) se almacenan en memoria
-    local por instancia: en un despliegue multi-nodo cada nodo emitirá su
-    propia alerta la primera vez que la observe, lo cual es aceptable para
-    logging pero no debe usarse como fuente de verdad para decisiones de
-    negocio (para eso está el propio backend, que sí es consistente).
+    Progressive alerts (`alerts_triggered`) are kept in local memory per
+    instance: in a multi-node deployment each node emits its own alert the
+    first time it observes the threshold. That is acceptable for logging,
+    but it must not be used as the source of truth for business decisions
+    (the backend itself, which is consistent, is there for that).
     """
 
     monthly_budget: float
@@ -188,7 +188,7 @@ class TokenBudget:
 
     @property
     def spent(self) -> float:
-        """Gasto acumulado para este equipo."""
+        """Spend accumulated for this team."""
         return self.backend.get_spent(self._key)
 
     @property
@@ -196,7 +196,7 @@ class TokenBudget:
         return max(self.monthly_budget - self.spent, 0.0)
 
     def record_cost(self, cost: float) -> bool:
-        """Registra `cost` si no excede el presupuesto. Devuelve si tuvo éxito."""
+        """Record `cost` if it does not exceed the budget. Return whether it succeeded."""
         if cost < 0:
             raise ValueError("cost no puede ser negativo")
         if not self.backend.add_cost(self._key, cost, self.monthly_budget):

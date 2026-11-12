@@ -1,16 +1,15 @@
 """
-sintetico.security — Modelo de amenazas, scanner heurístico de prompt
-injection y host MCP con validación de esquema (Capítulo 17).
+sintetico.security — threat model, heuristic prompt-injection scanner and
+MCP host with schema validation (Chapter 17).
 
-Aviso importante: `SecurityScanner` es un filtro heurístico basado en
-patrones, pensado como *primera línea* barata y de baja latencia (defensa
-en profundidad), no como defensa única. Un atacante que conozca los
-patrones puede evadirlos fácilmente. En producción esto debe combinarse
-con un clasificador (otro LLM o un modelo dedicado) que evalúe intención,
-y con controles a nivel de permisos de herramientas (ver `MPCHost`). Para
-eso existe el parámetro `secondary_classifier` de `SecurityScanner`: es
-el punto de extensión pensado para enchufar ese clasificador real sin
-tener que reescribir el scanner.
+Important notice: `SecurityScanner` is a pattern-based heuristic filter,
+meant as a cheap, low-latency *first line* (defense in depth), not as the
+only defense. An attacker who knows the patterns can evade them easily.
+In production it must be combined with a classifier (another LLM or a
+dedicated model) that evaluates intent, and with controls at the level of
+tool permissions (see `MCPHost`). That is what the `secondary_classifier`
+parameter of `SecurityScanner` is for: it is the extension point designed
+to plug in that real classifier without rewriting the scanner.
 """
 
 from __future__ import annotations
@@ -117,20 +116,19 @@ THREAT_MATRIX: List[Threat] = [
 
 
 class SecurityScanner:
-    """Heurísticas baratas de detección de prompt injection y riesgos de
-    definición de herramientas. Ver aviso del módulo: no sustituye a un
-    clasificador semántico ni a controles de permisos.
+    """Cheap heuristics that detect prompt injection and risks in tool
+    definitions. See the module notice: it does not replace a semantic
+    classifier or permission controls.
 
-    `secondary_classifier`, si se proporciona, es una segunda opinión que
-    se consulta *sólo* cuando las heurísticas no encuentran nada — nunca
-    para "desautorizar" un hallazgo del regex (una heurística que detecta
-    algo no debería poder ser silenciada por un clasificador que dice lo
-    contrario; en duda, prevalece la señal más conservadora). Firma
-    esperada: `Callable[[str], bool]`, devuelve `True` si el texto es
-    malicioso según el clasificador. Pensado para enchufar ahí un
-    segundo LLM evaluando intención semántica, o un modelo dedicado de
-    detección de prompt injection — el propio regex, por diseño, nunca
-    va a ser ese componente."""
+    `secondary_classifier`, if provided, is a second opinion consulted
+    *only* when the heuristics find nothing — never to "overrule" a regex
+    finding (a heuristic that detects something must not be silenced by a
+    classifier that says otherwise; when in doubt, the more conservative
+    signal wins). Expected signature: `Callable[[str], bool]`, returning
+    `True` if the text is malicious according to the classifier. It is the
+    place to plug in a second LLM that evaluates semantic intent, or a
+    dedicated prompt-injection detection model — the regex itself, by
+    design, will never be that component."""
 
     _SYSTEM_PROMPT_BYPASS_PATTERNS = (
         r"\bignora\b.{0,20}\b(instrucci|regla)",
@@ -167,8 +165,8 @@ class SecurityScanner:
                 if self.secondary_classifier(user_input):
                     findings.append({"type": "flagged_by_secondary_classifier", "severity": "medium"})
             except Exception:  # noqa: BLE001
-                # Un fallo del clasificador secundario no debe tumbar el
-                # scan: se degrada al resultado (ya calculado) del regex.
+                # A failure of the secondary classifier must not bring the scan
+                # down: it degrades to the regex result already computed.
                 logger.exception("El secondary_classifier de SecurityScanner falló; se ignora su veredicto")
 
         return {"is_malicious": len(findings) > 0, "findings": findings}
@@ -209,10 +207,10 @@ class SchemaValidationUnavailableError(RuntimeError):
     pass
 
 
-class MPCHost:
-    """Host MCP con validación determinista de esquema (JSON Schema) antes
-    de ejecutar cualquier herramienta, y con exigencia de aprobación
-    humana para herramientas marcadas como tal."""
+class MCPHost:
+    """MCP host with deterministic schema validation (JSON Schema) before
+    any tool is executed, and mandatory human approval for the tools
+    marked as requiring it."""
 
     def __init__(self):
         self.registered_tools: Dict[str, MCPTool] = {}
@@ -248,3 +246,7 @@ class MPCHost:
             }
 
         return {"result": f"Ejecutado {tool_name} con {input_data}"}
+
+
+# Backwards-compatible alias for the original (misspelled) name.
+MPCHost = MCPHost

@@ -1,0 +1,18 @@
+{
+  "_comment": "EXAMPLE VALUES ONLY - not legal advice. Have counsel validate before use.",
+  "country": "CO",
+  "regulation": "Law 1581",
+  "data_residency": {
+    "allowed_regions": [
+      "us-east-1",
+      "sa-east-1"
+    ],
+    "cross_border_requires_consent": true
+  },
+  "breach_notification": {
+    "deadline_hours": 72
+  },
+  "retention": {
+    "audit_logs_years": 5
+  }
+}

@@ -1,6 +1,6 @@
 """
-sintetico.resilience — Circuit breakers, harness de ejecución y logging
-de auditoría (Capítulo 5).
+sintetico.resilience — circuit breakers, execution harness and audit
+logging (Chapter 5).
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ __all__ = [
 
 
 class CircuitBreaker:
-    """Circuit breaker clásico (cerrado/abierto/semi-abierto) para llamadas
-    a servicios externos inestables."""
+    """Classic circuit breaker (closed/open/half-open) for calls to
+    unstable external services."""
 
     def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 60):
         self.failure_threshold = failure_threshold
@@ -61,8 +61,8 @@ class CircuitBreaker:
 
 
 class AgentCircuitBreaker:
-    """Circuit breaker especializado en agentes: detecta ciclos de
-    pensamiento idénticos y "flooding" de una misma herramienta."""
+    """Circuit breaker specialized for agents: detects identical thought
+    cycles and "flooding" of a single tool."""
 
     def __init__(self, max_cycles: int = 5, same_tool_threshold: int = 4, window_size: int = 30):
         self.max_cycles = max_cycles
@@ -109,9 +109,9 @@ class AgentCircuitBreaker:
 
 
 class AuditLogger:
-    """Registro de auditoría por equipo. En producción se emitiría a un
-    sumidero append-only (S3, BigQuery, etc.) en vez de acumularse en
-    memoria; `logs` se expone para poder inspeccionarlo en tests/demos."""
+    """Per-team audit record. In production it would be emitted to an
+    append-only sink (S3, BigQuery, etc.) instead of accumulating in
+    memory; `logs` is exposed so it can be inspected in tests/demos."""
 
     def __init__(self, team_id: str):
         self.team_id = team_id
@@ -134,8 +134,8 @@ class AuditLogger:
             "tokens_input": tokens_input,
             "tokens_output": tokens_output,
             "cost_usd": round(cost_usd, 4),
-            # Nunca se persiste el prompt/respuesta en claro: sólo su hash,
-            # suficiente para deduplicar y correlacionar sin filtrar datos.
+            # The prompt/response is never stored in clear text: only its hash,
+            # which is enough to deduplicate and correlate without leaking data.
             "prompt_hash": hashlib.sha256(prompt.encode()).hexdigest()[:16],
             "response_hash": hashlib.sha256(response.encode()).hexdigest()[:16],
             "tools_used": tools_used or [],
@@ -155,12 +155,12 @@ class AgentResult:
 
 
 class AgentHarness:
-    """Orquesta la ejecución de un agente aplicando presupuesto, circuit
-    breaker y auditoría de forma consistente (Capítulo 5).
+    """Orchestrates the execution of an agent, applying budget, circuit
+    breaker and auditing consistently (Chapter 5).
 
-    `agent_fn` debe devolver un dict con, al menos, las claves
-    `content`, `tokens_input`, `tokens_output` y `cost_usd`; opcionalmente
-    `thought`, `tools` y `observation` para alimentar el circuit breaker.
+    `agent_fn` must return a dict with at least the keys `content`,
+    `tokens_input`, `tokens_output` and `cost_usd`; optionally `thought`,
+    `tools` and `observation`, which feed the circuit breaker.
     """
 
     def __init__(
@@ -177,8 +177,8 @@ class AgentHarness:
         if self.breaker.is_open():
             return AgentResult("", 0, 0.0, self.budget.remaining, circuit_breaker_triggered=self.breaker.failure_reason)
 
-        # Reserva optimista de presupuesto antes de ejecutar, para no gastar
-        # tokens en una llamada que de todas formas se descartaría.
+        # Optimistic budget reservation before running, so that no tokens are
+        # spent on a call that would be discarded anyway.
         reserved = estimated_cost if estimated_cost is not None else len(task) * 0.00001
         if not self.budget.record_cost(reserved):
             return AgentResult("", 0, 0.0, self.budget.remaining, circuit_breaker_triggered="budget_exceeded")

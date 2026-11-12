@@ -1,0 +1,15 @@
+src/sintetico/guards.py: 15 of 15 mutants tried, killed 12, survived 3, score 80%
+src/sintetico/autonomy.py: 30 of 30 mutants tried, killed 29, survived 1, score 97%
+src/sintetico/audit.py: 40 of 40 mutants tried, killed 37, survived 3, score 92%
+src/sintetico/devops/migration.py: 36 of 36 mutants tried, killed 34, survived 2, score 94%
+src/sintetico/devops/iac_review.py: 60 of 102 mutants tried, killed 52, survived 8, score 87%
+src/sintetico/devops/gitops.py: 36 of 36 mutants tried, killed 35, survived 1, score 97%
+src/sintetico/devops/compliance.py: 25 of 25 mutants tried, killed 19, survived 6, score 76%
+src/sintetico/devops/residency.py: 17 of 17 mutants tried, killed 17, survived 0, score 100%
+src/sintetico/evals.py: 36 of 36 mutants tried, killed 32, survived 4, score 89%
+src/sintetico/gateway.py: 37 of 37 mutants tried, killed 35, survived 2, score 95%
+src/sintetico/delivery.py: 41 of 41 mutants tried, killed 39, survived 2, score 95%
+src/sintetico/structured.py: 40 of 40 mutants tried, killed 39, survived 1, score 98%
+src/sintetico/reasoning_resilient.py: 45 of 45 mutants tried, killed 42, survived 3, score 93%
+src/sintetico/semantic_cache.py: 32 of 146 mutants tried, killed 24, survived 8, score 75%
+src/sintetico/distributed.py: 24 of 145 mutants tried, killed 21, survived 3, score 88%

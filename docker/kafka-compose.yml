@@ -1,0 +1,9 @@
+# A single-node Kafka (KRaft, no ZooKeeper) for local development and for tests/test_kafka_bus.py::TestRealBroker:
+#   docker compose -f docker/kafka-compose.yml up -d
+#   SINTETICO_TEST_KAFKA=localhost:9092 pytest tests/test_kafka_bus.py
+# NOT for production: one broker, no replication, no authentication, plaintext.
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    ports:
+      - "9092:9092"

@@ -1,6 +1,6 @@
 """
-sintetico.debugging — Agente de debugging en producción con guardas de
-timeout (Capítulo 13).
+sintetico.debugging — production debugging agent with timeout guards
+(Chapter 13).
 """
 
 from __future__ import annotations
@@ -37,9 +37,9 @@ class DebugProgress:
 
 
 class ProductionDebugAgent:
-    """Sesión de debugging asistida por LLM con fases explícitas. Sólo
-    escala más allá de DETECTION si el impacto supera un umbral mínimo,
-    para no gastar presupuesto en incidentes triviales."""
+    """LLM-assisted debugging session with explicit phases. It only
+    escalates beyond DETECTION if the impact exceeds a minimum threshold,
+    so that no budget is spent on trivial incidents."""
 
     MIN_AFFECTED_USERS_TO_ESCALATE = 10
 
@@ -71,8 +71,8 @@ class ProductionDebugAgent:
 
 
 class DebugTimeoutGuard:
-    """Corta una sesión de debugging que no progresa, evitando que un
-    agente quede iterando indefinidamente sobre un incidente sin resolver."""
+    """Cuts off a debugging session that makes no progress, so that an
+    agent does not iterate forever on an unresolved incident."""
 
     ABSOLUTE_TIMEOUT_SECONDS = 900
 

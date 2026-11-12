@@ -1,6 +1,6 @@
 """
-sintetico.orchestration — Enrutamiento por complejidad, caché semántica,
-gateway asíncrono y control de presupuesto en enjambres (Capítulos 3, 4 y 18).
+sintetico.orchestration — routing by complexity, response cache,
+asynchronous gateway and budget control in swarms (Chapters 3, 4 and 18).
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ __all__ = [
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Gateway asíncrono (cola de tareas desacoplada)
+# Asynchronous gateway (decoupled task queue)
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -55,18 +55,19 @@ class AgentTask:
 
 
 class AsyncAIGateway:
-    """Gateway asíncrono con cola en memoria y pool de hilos.
+    """Asynchronous gateway with an in-memory queue and a thread pool.
 
-    En producción, `_process_async` se sustituiría por la publicación de
-    un mensaje en Kafka/SQS/PubSub y `wait_for_result` por un consumidor
-    del resultado (webhook, polling a la base de datos, etc.). Esta
-    implementación es un doble de esa arquitectura para poder
-    demostrarla sin infraestructura externa.
+    In production, `_process_async` would be replaced by publishing a
+    message to Kafka/SQS/PubSub, and `wait_for_result` by a consumer of
+    the result (webhook, polling the database, etc.). This implementation
+    is a stand-in for that architecture, so it can be demonstrated with
+    no external infrastructure. The Kafka-backed version is
+    `sintetico.distributed.DistributedAIGateway`.
     """
 
     def __init__(self, team_id: str, budget: float, max_workers: int = 8):
         self.team_id = team_id
-        # Import perezoso para evitar dependencia circular con budget.py
+        # Lazy import to avoid a circular dependency with budget.py
         from .budget import TokenBudget
 
         self.budget = TokenBudget(budget, team_id=team_id)
@@ -89,7 +90,7 @@ class AsyncAIGateway:
             if task:
                 task.status = TaskStatus.PROCESSING
         try:
-            time.sleep(0.1)  # Simula latencia de trabajo real
+            time.sleep(0.1)  # Simulates the latency of real work
             with self._lock:
                 task = self._task_cache.get(task_id)
                 if task:
@@ -121,12 +122,12 @@ class AsyncAIGateway:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Detección de bucles y control de presupuesto en enjambres
+# Loop detection and budget control in swarms
 # ═══════════════════════════════════════════════════════════════════
 
 
 class CycleDetector:
-    """Detecta patrones de ping-pong A→B / B→A repetidos entre agentes."""
+    """Detects repeated A→B / B→A ping-pong patterns between agents."""
 
     def __init__(self, repetition_count: int = 3):
         self.repetition_count = repetition_count
@@ -143,7 +144,7 @@ class CycleDetector:
 
 
 class SwarmTokenOrchestrator:
-    """Orquestador de enjambre con presupuesto de tokens y detección de ciclos."""
+    """Swarm orchestrator with a token budget and cycle detection."""
 
     def __init__(
         self, session_id: str, total_budget_tokens: int, warning_threshold: float = 0.70, halt_threshold: float = 0.90
@@ -175,17 +176,17 @@ class SwarmTokenOrchestrator:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Enrutamiento por complejidad y caché semántica
+# Routing by complexity and response cache
 # ═══════════════════════════════════════════════════════════════════
 
 
 class ModelRouter:
-    """Enruta una consulta al modelo más barato capaz de resolverla.
+    """Routes a query to the cheapest model able to answer it.
 
-    Devuelve *aliases* lógicos ("haiku", "sonnet", "opus"), no ids
-    concretos de la API: la resolución al id real (con su sufijo de
-    versión/fecha) vive en `sintetico.model_registry`, así que un cambio
-    de catálogo de modelos de Anthropic no obliga a tocar esta clase.
+    Returns logical *aliases* ("haiku", "sonnet", "opus"), not concrete
+    API ids: resolving the real id (with its version/date suffix) is the
+    job of `sintetico.model_registry`, so a change in Anthropic's model
+    catalog does not require touching this class.
     """
 
     RULES: List[Tuple[str, str]] = [
@@ -198,7 +199,7 @@ class ModelRouter:
     DEFAULT_ALIAS = "sonnet"
 
     def select_model(self, query: str) -> str:
-        """Devuelve el alias de modelo elegido ('haiku' | 'sonnet' | 'opus')."""
+        """Return the chosen model alias ('haiku' | 'sonnet' | 'opus')."""
         lowered = query.lower()
         for pattern, alias in self.RULES:
             if re.search(pattern, lowered):
@@ -206,17 +207,17 @@ class ModelRouter:
         return self.DEFAULT_ALIAS
 
     def select_model_id(self, query: str) -> str:
-        """Devuelve directamente el id real de modelo a enviar a la API."""
+        """Return the real model id to send to the API."""
         return resolve_model_id(self.select_model(query))
 
 
 class SemanticCache:
-    """Caché LRU thread-safe para respuestas de consultas repetidas.
+    """Thread-safe LRU cache for the answers to repeated queries.
 
-    Es una caché *exacta* por texto de consulta normalizado, no una
-    caché semántica basada en embeddings: ese es el siguiente escalón
-    natural (ver nota en el README) pero requiere un modelo de embeddings
-    y un índice de similitud, fuera del alcance de este componente base.
+    It is an *exact* cache keyed by the normalized query text, not an
+    embedding-based semantic cache: that is the natural next step (see
+    `sintetico.semantic_cache`), but it needs an embedding model and a
+    similarity index, which are outside the scope of this base component.
     """
 
     def __init__(self, max_size: int = 10_000):
@@ -258,7 +259,7 @@ class SemanticCache:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Optimización de RAG
+# RAG optimization
 # ═══════════════════════════════════════════════════════════════════
 
 

@@ -1,7 +1,7 @@
 """
-sintetico.governance — RACI, invariantes de producción, autonomía
-progresiva, overrides de emergencia, escalado a humanos y aprobación de
-decisiones irreversibles (Capítulos 7, 9, 12, 15 y 16).
+sintetico.governance — RACI, production invariants, progressive autonomy,
+emergency overrides, escalation to humans and approval of irreversible
+decisions (Chapters 7, 9, 12, 15 and 16).
 """
 
 from __future__ import annotations
@@ -49,8 +49,8 @@ class RACILevel(Enum):
 
 
 class RACIGate:
-    """Obliga a que toda actividad tenga exactamente un responsable último
-    (Accountable) humano; un agente jamás puede ostentar esa posición."""
+    """Enforces that every activity has exactly one human who is ultimately
+    Accountable; an agent can never hold that position."""
 
     def __init__(self, activity: str, assignments: Dict[str, RACILevel]):
         self.activity = activity
@@ -75,14 +75,14 @@ class RACIGate:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Invariantes de producción y coste total real (TCO)
+# Production invariants and real total cost (TCO)
 # ═══════════════════════════════════════════════════════════════════
 
 
 class ProductionInvariants:
-    """Invariantes que deben cumplirse *antes* de cada llamada a un agente
-    en producción: presupuesto disponible y confianza mínima acorde al
-    nivel de autonomía solicitado."""
+    """Invariants that must hold *before* every call to an agent in
+    production: available budget and a minimum trust level that matches
+    the autonomy level requested."""
 
     def __init__(self, audit, budget: TokenBudget):
         self.audit = audit
@@ -97,10 +97,9 @@ class ProductionInvariants:
 
 
 class TrueCostTracker:
-    """Acumula el coste total real (tokens + tiempo humano de verificación)
-    y detecta cuándo la verificación humana está dominando el coste, señal
-    de que el agente no es lo bastante fiable para el nivel de autonomía
-    actual."""
+    """Accumulates the real total cost (tokens + human verification time)
+    and detects when human verification dominates the cost, a sign that
+    the agent is not reliable enough for its current autonomy level."""
 
     def __init__(self, hourly_rate_usd: float):
         if hourly_rate_usd <= 0:
@@ -126,15 +125,15 @@ class TrueCostTracker:
         }
 
     def detect_debt_spike(self, ratio_threshold: float = 3.0) -> bool:
-        """True si el coste de verificación humana supera en `ratio_threshold`
-        veces el coste de tokens: síntoma de que el agente genera más
-        trabajo de revisión del que ahorra en generación."""
+        """True if the human verification cost exceeds the token cost by
+        `ratio_threshold` times: a symptom that the agent creates more
+        review work than it saves in generation."""
         tco = self.get_tco()
         return tco["verification_cost_usd"] > (ratio_threshold * tco["token_cost_usd"] + 0.01)
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Autonomía progresiva
+# Progressive autonomy
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -155,9 +154,9 @@ class _AutonomyMilestone:
 
 
 class AutonomyGate:
-    """Modela la promoción gradual de autonomía de un agente en producción,
-    condicionada a tiempo en producción + tasa de éxito en el eval set,
-    con degradación inmediata ante un incidente crítico.
+    """Models the gradual promotion of an agent's autonomy in production,
+    conditional on time in production + pass rate on the eval set, with
+    immediate demotion after a critical incident.
     """
 
     _MILESTONES = [
@@ -178,29 +177,29 @@ class AutonomyGate:
         return requested_level.value <= self.current_level.value
 
     def advance_week(self) -> None:
-        """Avanza una semana e intenta promocionar de nivel.
+        """Advance one week and try to promote the agent one level.
 
-        Los hitos se evalúan en orden estricto (nunca se puede saltar de
-        WORKFLOW_ONLY a FULL_AUTONOMY sin pasar por los niveles
-        intermedios), aunque hayan transcurrido suficientes semanas para
-        el hito final: cada promoción exige cumplir el pass_rate y la
-        ausencia de incidentes del *siguiente* nivel, no sólo del último.
+        Milestones are evaluated in strict order (it is never possible to
+        jump from WORKFLOW_ONLY to FULL_AUTONOMY without going through the
+        intermediate levels), even when enough weeks have passed for the
+        final milestone: each promotion requires the pass rate and the
+        absence of incidents of the *next* level, not just of the last one.
 
-        Nota de diseño (bug corregido): una primera versión comprobaba
-        cada hito de forma independiente. Como el hito de FULL_AUTONOMY
-        no exige una `min_pass_rate` adicional (ya viene filtrada por los
-        hitos previos), un agente con una tasa de éxito baja pero mucho
-        tiempo en producción podía saltar directamente a autonomía
-        completa sin haber demostrado nunca un pass_rate aceptable — el
-        tipo exacto de fallo de gobernanza que este gate existe para
-        prevenir. Ahora la promoción es estrictamente secuencial.
+        Design note (fixed bug): a first version checked each milestone
+        independently. Because the FULL_AUTONOMY milestone does not require
+        an additional `min_pass_rate` (it is already filtered by the
+        previous milestones), an agent with a low pass rate but a long time
+        in production could jump straight to full autonomy without ever
+        having shown an acceptable pass rate — the exact kind of governance
+        failure this gate exists to prevent. Promotion is now strictly
+        sequential.
         """
         self.weeks_in_production += 1
         while True:
             next_level_value = self.current_level.value + 1
             milestone = next((m for m in self._MILESTONES if m.level.value == next_level_value), None)
             if milestone is None:
-                break  # ya en el nivel máximo
+                break  # already at the highest level
             if self.weeks_in_production < milestone.weeks_required:
                 break
             if self.eval_set_pass_rate < milestone.min_pass_rate:
@@ -241,12 +240,12 @@ class OverrideRequest:
 
 
 class EmergencyOverrideGateway:
-    """Bypass auditado para falsos positivos de calidad/seguridad.
+    """Audited bypass for quality/security false positives.
 
-    Todo override aprobado queda registrado en `override_history` de forma
-    permanente e inmutable desde fuera (no se expone un método para
-    borrarlo), porque es el rastro de auditoría que un compliance officer
-    necesitará poder revisar.
+    Every approved override is recorded in `override_history` permanently
+    and immutably from the outside (no method is exposed to delete it),
+    because it is the audit trail a compliance officer will need to
+    review.
     """
 
     def __init__(self):
@@ -288,7 +287,7 @@ class EmergencyOverrideGateway:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Escalado a humanos
+# Escalation to humans
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -350,7 +349,7 @@ class EscalationHandler:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Aprobación de decisiones irreversibles
+# Approval of irreversible decisions
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -401,8 +400,8 @@ class HumanDecisionGate:
 
 
 class DatabaseMigrationGate:
-    """Aprobación de doble control (2 firmas) para migraciones de base de
-    datos, con validaciones duras antes de aceptar siquiera la propuesta."""
+    """Dual-control approval (two signatures) for database migrations,
+    with hard validations before the proposal is even accepted."""
 
     APPROVALS_REQUIRED = ("principal-engineer", "cto")
     MAX_DOWNTIME_MINUTES = 120
@@ -457,10 +456,10 @@ class DatabaseMigrationGate:
         if not justification.strip():
             reasons.append("Falta justificación de negocio")
         if volume_gb > self.LARGE_VOLUME_GB_THRESHOLD and "cto" not in self.APPROVALS_REQUIRED:
-            # Nota: con la lista de aprobadores actual esta condición nunca
-            # se cumple (el CTO ya es obligatorio). Se deja explícita porque,
-            # si en el futuro se reduce APPROVALS_REQUIRED, este umbral debe
-            # seguir exigiendo la firma del CTO para migraciones grandes.
+            # Note: with the current list of approvers this condition is never
+            # met (the CTO is already mandatory). It is kept explicit because,
+            # if APPROVALS_REQUIRED is ever reduced, this threshold must still
+            # require the CTO's signature for large migrations.
             reasons.append(f"Volumen > {self.LARGE_VOLUME_GB_THRESHOLD}GB requiere aprobación explícita del CTO")
         return {"valid": len(reasons) == 0, "reasons": reasons}
 
