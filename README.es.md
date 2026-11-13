@@ -172,7 +172,8 @@ Ver [`.env.example`](.env.example). Las más relevantes:
 > Perez Ruiz, S. (2026). *Synthetic Code: reference implementation* [Software]. Zenodo.
 > https://doi.org/10.5281/zenodo.24161299
 
-Ese DOI (concepto) apunta siempre a la última versión; el de la v2.2.1 es
+Ese DOI (concepto) apunta siempre a la última versión. Para citar una versión exacta: v2.2.2,
+[10.5281/zenodo.24196751](https://doi.org/10.5281/zenodo.24196751); v2.2.1,
 [10.5281/zenodo.24161300](https://doi.org/10.5281/zenodo.24161300).
 
 ## Licencia

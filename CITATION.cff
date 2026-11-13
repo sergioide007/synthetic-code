@@ -11,7 +11,7 @@ keywords:
 title: "Synthetic Code: reference implementation"
 type: software
 version: 2.2.2
-date-released: "2026-11-12"
+date-released: "2026-11-13"
 license: MIT
 repository-code: "https://github.com/sergioide007/synthetic-code"
 url: "https://codigosintetico.specsolid.com"
@@ -23,6 +23,9 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.24161299"
     description: "Concept DOI: all versions, resolves to the latest"
+  - type: doi
+    value: "10.5281/zenodo.24196751"
+    description: "Version 2.2.2"
   - type: doi
     value: "10.5281/zenodo.24161300"
     description: "Version 2.2.1"

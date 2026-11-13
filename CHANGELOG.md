@@ -1,6 +1,8 @@
 # Changelog
 
-## 2.2.2 (2026-11-12)
+## 2.2.2 (2026-11-13)
+Zenodo: [10.5281/zenodo.24196751](https://doi.org/10.5281/zenodo.24196751).
+
 ### Fixed
 - `EmergencyOverrideGateway`: separation of duties. The person who requests an override can no longer approve it
   (case- and whitespace-insensitive), an approver must be named, and a request must name its requestor. A refused
