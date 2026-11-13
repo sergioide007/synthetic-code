@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- `model_registry`: OpenAI catalog refreshed from OpenAI's published Standard-tier prices (2026-11-13). Added
+  `gpt-6-astra` (quality, $10 / $50 per 1M tokens), `gpt-6.1-sol` (balanced, $2 / $10) and `gpt-6-luna` (fast,
+  $0.10 / $0.50), all with a 1.05M-token context. `gpt-4o` corrected to $2.50 / $10. Removed `gpt-4-turbo` and
+  `gpt-3.5-turbo`, which OpenAI no longer lists. Anthropic entries were already current (Claude 5.5 family).
+- `adapters.PROFILES` now recommends current tiers (`gpt-6-astra`, `gpt-6.1-sol`, `gpt-6-luna`), and a test
+  guarantees every model a profile names is registered.
+
 ## 2.2.2 (2026-11-13)
 Zenodo: [10.5281/zenodo.24196751](https://doi.org/10.5281/zenodo.24196751).
 

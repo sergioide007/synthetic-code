@@ -25,3 +25,19 @@ def test_registry_entries_are_sane():
         assert cfg.id and cfg.provider in {"anthropic", "openai", "local"}
         assert 0 < cfg.cost_per_million_input <= cfg.cost_per_million_output * 1.0001 or cfg.provider == "local"
         assert cfg.max_context_tokens > 0 and cfg.tier in {"fast", "balanced", "quality"}
+
+
+def test_capability_profiles_only_name_registered_models():
+    from sintetico.adapters import PROFILES
+    for profile in PROFILES.values():
+        for alias in profile.recommended + profile.avoid:
+            assert alias in MODEL_REGISTRY, f"{profile.name} names unregistered model {alias}"
+
+
+def test_openai_catalog_matches_published_prices():
+    # Standard-tier prices published by OpenAI on 2026-11-13 (input, output per 1M tokens).
+    expected = {"gpt-6-astra": (10.00, 50.00), "gpt-6.1-sol": (2.00, 10.00), "gpt-6-luna": (0.10, 0.50), "gpt-4o": (2.50, 10.00)}
+    for alias, (inp, out) in expected.items():
+        cfg = MODEL_REGISTRY[alias]
+        assert (cfg.provider, cfg.cost_per_million_input, cfg.cost_per_million_output) == ("openai", inp, out)
+    assert "gpt-4-turbo" not in MODEL_REGISTRY and "gpt-3.5-turbo" not in MODEL_REGISTRY

@@ -50,9 +50,14 @@ _DEFAULTS: Dict[str, ModelConfig] = {
     "haiku": ModelConfig("claude-haiku-5-5", "anthropic", 0.10, 0.50, 1_000_000, "fast"),
     "sonnet": ModelConfig("claude-sonnet-5-5", "anthropic", 2.00, 10.00, 1_000_000, "balanced"),
     "opus": ModelConfig("claude-opus-5-5", "anthropic", 4.00, 20.00, 1_000_000, "quality"),
-    "gpt-4o": ModelConfig("gpt-4o", "openai", 5.00, 15.00, 128_000, "balanced"),
-    "gpt-4-turbo": ModelConfig("gpt-4-turbo", "openai", 10.00, 30.00, 128_000, "quality"),
-    "gpt-3.5-turbo": ModelConfig("gpt-3.5-turbo", "openai", 0.50, 1.50, 16_385, "fast"),
+    # OpenAI values below were read from https://developers.openai.com/api/docs/pricing (Standard tier)
+    # and the context windows from https://developers.openai.com/api/docs/models on 2026-11-13.
+    # Inputs over 272K tokens are billed at a higher long-context rate that this table doesn't model.
+    # gpt-4-turbo and gpt-3.5-turbo were removed: OpenAI no longer lists them.
+    "gpt-6-astra": ModelConfig("gpt-6-astra", "openai", 10.00, 50.00, 1_050_000, "quality"),
+    "gpt-6.1-sol": ModelConfig("gpt-6.1-sol", "openai", 2.00, 10.00, 1_050_000, "balanced"),
+    "gpt-6-luna": ModelConfig("gpt-6-luna", "openai", 0.10, 0.50, 1_050_000, "fast"),
+    "gpt-4o": ModelConfig("gpt-4o", "openai", 2.50, 10.00, 128_000, "balanced"),
     "local": ModelConfig("llama3-70b", "local", 0.10, 0.10, 8_192, "quality"),
 }
 

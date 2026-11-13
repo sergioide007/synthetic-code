@@ -79,7 +79,7 @@ class CapabilityProfile:
 
 # Aliases refer to sintetico.model_registry. Treat as defaults to revisit each quarter.
 PROFILES: Dict[str, CapabilityProfile] = {
-    "complex_reasoning": CapabilityProfile("complex_reasoning", ["opus", "gpt-4-turbo"], ["gpt-3.5-turbo", "local"]),
-    "simple_fast": CapabilityProfile("simple_fast", ["haiku", "gpt-3.5-turbo"], ["opus"], "cheap tier is enough"),
-    "strict_json": CapabilityProfile("strict_json", ["sonnet", "gpt-4o"], ["local"], "always validate + retry"),
+    "complex_reasoning": CapabilityProfile("complex_reasoning", ["opus", "gpt-6-astra"], ["gpt-6-luna", "local"]),
+    "simple_fast": CapabilityProfile("simple_fast", ["haiku", "gpt-6-luna"], ["opus", "gpt-6-astra"], "cheap tier is enough"),
+    "strict_json": CapabilityProfile("strict_json", ["sonnet", "gpt-6.1-sol"], ["local"], "always validate + retry"),
 }
