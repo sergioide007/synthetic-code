@@ -41,3 +41,10 @@ def test_openai_catalog_matches_published_prices():
         cfg = MODEL_REGISTRY[alias]
         assert (cfg.provider, cfg.cost_per_million_input, cfg.cost_per_million_output) == ("openai", inp, out)
     assert "gpt-4-turbo" not in MODEL_REGISTRY and "gpt-3.5-turbo" not in MODEL_REGISTRY
+
+
+def test_openai_kwargs_suit_reasoning_and_gpt4_models():
+    from sintetico.real_providers import openai_sampling_kwargs
+    assert openai_sampling_kwargs("gpt-6.1-sol", 100, 0.2) == {"max_completion_tokens": 100}
+    assert openai_sampling_kwargs("gpt-6-astra", 100, 0.2) == {"max_completion_tokens": 100}
+    assert openai_sampling_kwargs("gpt-4o", 100, 0.2) == {"max_completion_tokens": 100, "temperature": 0.2}

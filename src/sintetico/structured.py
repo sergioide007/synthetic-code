@@ -180,12 +180,12 @@ def anthropic_complete_structured(provider: Any, request: LLMRequest, json_schem
 
 def openai_complete_structured(provider: Any, request: LLMRequest, json_schema: Dict[str, Any], name: str) -> LLMResponse:
     """OpenAI: ``response_format=json_schema`` (non-strict, because Pydantic schemas with defaults are not strict-compatible)."""
-    from .real_providers import LLMProviderError, resolve_model_id
+    from .real_providers import LLMProviderError, openai_sampling_kwargs, resolve_model_id
 
     model_id = resolve_model_id(request.model or provider.default_model)
     try:
         response = provider.client.chat.completions.create(
-            model=model_id, max_tokens=request.max_tokens, temperature=request.temperature,
+            model=model_id, **openai_sampling_kwargs(model_id, request.max_tokens, request.temperature),
             messages=[{"role": "system", "content": request.system_prompt}, *request.messages],
             response_format={"type": "json_schema", "json_schema": {"name": name[:64], "schema": json_schema, "strict": False}})
     except provider._openai.APIError as exc:

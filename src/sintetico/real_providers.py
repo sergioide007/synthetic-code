@@ -195,6 +195,18 @@ class RealAnthropicProvider(LLMProvider):
 
 
 # ─── OpenAI provider ───────────────────────────────────────────────
+def openai_sampling_kwargs(model_id: str, max_tokens: int, temperature: float) -> dict:
+    """Chat Completions arguments that every current OpenAI model accepts.
+
+    `max_completion_tokens` replaces the deprecated `max_tokens`, which OpenAI's reasoning models
+    (GPT-5 and later, including the GPT-6 tiers) don't accept. `temperature` is sent only to the GPT-4
+    family: the reasoning models accept only their default, and leaving it out never fails a request."""
+    kwargs: dict = {"max_completion_tokens": max_tokens}
+    if model_id.startswith("gpt-4"):
+        kwargs["temperature"] = temperature
+    return kwargs
+
+
 class RealOpenAIProvider(LLMProvider):
     def __init__(
         self,
@@ -225,8 +237,7 @@ class RealOpenAIProvider(LLMProvider):
             try:
                 response = self.client.chat.completions.create(
                     model=model_id,
-                    max_tokens=request.max_tokens,
-                    temperature=request.temperature,
+                    **openai_sampling_kwargs(model_id, request.max_tokens, request.temperature),
                     messages=[{"role": "system", "content": request.system_prompt}, *request.messages],
                 )
             except self._openai.AuthenticationError as exc:

@@ -9,6 +9,9 @@
 - Anthropic structured output (`complete_structured`) offers the schema tool with `tool_choice: auto` and asks for
   one call in the system prompt, instead of forcing the tool, which the Claude 5.5 models reject with HTTP 400. A
   text answer is validated and re-asked like any other provider's.
+- `RealOpenAIProvider` and the OpenAI structured-output hook send `max_completion_tokens` instead of the deprecated
+  `max_tokens`, which OpenAI's reasoning models (GPT-5 and later, GPT-6 included) don't accept, and send
+  `temperature` only to the GPT-4 family (`openai_sampling_kwargs`).
 
 ### Changed
 - `model_registry`: OpenAI catalog refreshed from OpenAI's published Standard-tier prices (2026-11-13). Added
