@@ -10,7 +10,7 @@ keywords:
   - evals
 title: "Synthetic Code: reference implementation"
 type: software
-version: 2.2.2
+version: 2.2.3
 date-released: "2026-11-13"
 license: MIT
 repository-code: "https://github.com/sergioide007/synthetic-code"

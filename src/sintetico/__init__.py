@@ -163,7 +163,7 @@ try:  # optional extra `faiss` (numpy; faiss-cpu for the FAISS class)
 except ImportError:  # pragma: no cover
     pass
 
-__version__ = "2.2.2"
+__version__ = "2.2.3"
 
 __all__ = [
     "BudgetBackend",

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.3 (2026-11-13)
 
 ### Fixed
 - `RealAnthropicProvider` no longer sends `temperature`. The Claude 5.5 models in the registry reject sampling
