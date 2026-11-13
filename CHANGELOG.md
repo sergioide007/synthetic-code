@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fixed
+- `RealAnthropicProvider` no longer sends `temperature`. The Claude 5.5 models in the registry reject sampling
+  parameters with HTTP 400 (Opus 5.5 always, Sonnet and Haiku 5.5 for non-default values), so every real call with
+  the default `sonnet` alias failed. OpenAI and local providers still honor `LLMRequest.temperature`.
+- Anthropic structured output (`complete_structured`) offers the schema tool with `tool_choice: auto` and asks for
+  one call in the system prompt, instead of forcing the tool, which the Claude 5.5 models reject with HTTP 400. A
+  text answer is validated and re-asked like any other provider's.
+
 ### Changed
 - `model_registry`: OpenAI catalog refreshed from OpenAI's published Standard-tier prices (2026-11-13). Added
   `gpt-6-astra` (quality, $10 / $50 per 1M tokens), `gpt-6.1-sol` (balanced, $2 / $10) and `gpt-6-luna` (fast,

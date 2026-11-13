@@ -69,7 +69,8 @@ def fake_anthropic_module(monkeypatch):
             self.usage = FakeUsage()
 
     class FakeMessages:
-        def create(self, model, max_tokens, temperature, system, messages):
+        def create(self, model, max_tokens, system, messages, **extra):
+            assert "temperature" not in extra  # the Claude 5.5 models reject sampling parameters
             call_log["count"] += 1
             call_log["models_used"].append(model)
             return FakeMessage(f"respuesta simulada para {model}")

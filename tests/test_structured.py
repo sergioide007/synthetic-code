@@ -124,14 +124,16 @@ def _anthropic_provider(response=None, error=None):
     return p, calls
 
 
-def test_anthropic_native_forces_a_single_tool_call_and_returns_its_input_as_json():
+def test_anthropic_native_asks_for_one_tool_call_and_returns_its_input_as_json():
     resp = SimpleNamespace(content=[SimpleNamespace(type="text", text="ignored"), SimpleNamespace(type="tool_use", input={"thought": "t", "action": None})],
                            usage=SimpleNamespace(input_tokens=11, output_tokens=7))
     p, calls = _anthropic_provider(resp)
     out = p.complete_structured(LLMRequest("sys", [{"role": "user", "content": "x"}], "sonnet", 0.0, 50), {"type": "object"}, "AgentStep")
     kw = calls[0]
     assert kw["tools"] == [{"name": "AgentStep", "description": "Return the result in exactly this structure.", "input_schema": {"type": "object"}}]
-    assert kw["tool_choice"] == {"type": "tool", "name": "AgentStep"} and kw["system"] == "sys" and kw["max_tokens"] == 50
+    # auto, not a forced choice, and no temperature: the Claude 5.5 models reject both with HTTP 400
+    assert kw["tool_choice"] == {"type": "auto"} and "temperature" not in kw and kw["max_tokens"] == 50
+    assert kw["system"] == "sys\n\nAnswer by calling the `AgentStep` tool exactly once."
     assert json.loads(out.content) == {"thought": "t", "action": None} and out.usage == {"input_tokens": 11, "output_tokens": 7}
     assert AgentStep.model_validate_json(out.content).is_final
 

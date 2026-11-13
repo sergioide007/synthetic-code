@@ -156,15 +156,20 @@ def complete_structured(provider: LLMProvider, request: LLMRequest, model_cls: T
 
 # --------------------------------------------------------------------------------------------- native provider hooks
 def anthropic_complete_structured(provider: Any, request: LLMRequest, json_schema: Dict[str, Any], name: str) -> LLMResponse:
-    """Anthropic: force a single tool call whose ``input_schema`` is the schema (the long-standing way to get schema-shaped JSON)."""
+    """Anthropic: offer one tool whose ``input_schema`` is the schema and ask for exactly one call to it.
+
+    ``tool_choice`` is ``auto`` because the Claude 5.5 models reject a forced choice (``any``/``tool``) with HTTP 400,
+    and no ``temperature`` is sent because they reject sampling parameters too. If the model answers in text instead,
+    the text is returned and ``complete_structured`` validates it and retries with the error, as for any provider."""
     from .real_providers import LLMProviderError, resolve_model_id
 
     model_id = resolve_model_id(request.model or provider.default_model)
     tool = {"name": name[:64], "description": "Return the result in exactly this structure.", "input_schema": json_schema}
+    system = (f"{request.system_prompt}\n\n" if request.system_prompt else "") + f"Answer by calling the `{tool['name']}` tool exactly once."
     try:
         response = provider.client.messages.create(
-            model=model_id, max_tokens=request.max_tokens, temperature=request.temperature, system=request.system_prompt,
-            messages=request.messages, tools=[tool], tool_choice={"type": "tool", "name": tool["name"]})
+            model=model_id, max_tokens=request.max_tokens, system=system,
+            messages=request.messages, tools=[tool], tool_choice={"type": "auto"})
     except provider._anthropic.APIError as exc:
         raise LLMProviderError(str(exc)) from exc
     block = next((b for b in response.content if getattr(b, "type", "") == "tool_use"), None)

@@ -141,10 +141,12 @@ class RealAnthropicProvider(LLMProvider):
 
         def _call() -> LLMResponse:
             try:
+                # No `temperature`: the Claude 5.5 models reject sampling parameters (Opus 5.5 always,
+                # Sonnet/Haiku 5.5 for non-default values) with HTTP 400, so LLMRequest.temperature is
+                # deliberately not forwarded to Anthropic. OpenAI and local providers still honor it.
                 response = self.client.messages.create(
                     model=model_id,
                     max_tokens=request.max_tokens,
-                    temperature=request.temperature,
                     system=request.system_prompt,
                     messages=request.messages,
                 )

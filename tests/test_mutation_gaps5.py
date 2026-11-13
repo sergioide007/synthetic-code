@@ -51,7 +51,8 @@ def test_native_hooks_use_the_provider_default_model_and_cap_names_at_64_chars()
     a = object.__new__(RealAnthropicProvider); a.client = SimpleNamespace(messages=SimpleNamespace(create=a_create))
     a._anthropic = SimpleNamespace(APIError=Exception); a.default_model = "sonnet"
     a.complete_structured(LLMRequest("s", [], None, 0.0, 10), {}, long_name)
-    assert seen["a"]["model"] == resolve_model_id("sonnet") and seen["a"]["tools"][0]["name"] == "N" * 64 and seen["a"]["tool_choice"]["name"] == "N" * 64
+    assert seen["a"]["model"] == resolve_model_id("sonnet") and seen["a"]["tools"][0]["name"] == "N" * 64 and seen["a"]["tool_choice"] == {"type": "auto"}
+    assert seen["a"]["system"] == "s\n\nAnswer by calling the `" + "N" * 64 + "` tool exactly once."
     def o_create(**kw):
         seen["o"] = kw
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=None))], usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1))

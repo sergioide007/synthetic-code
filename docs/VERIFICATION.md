@@ -93,7 +93,7 @@ SINTETICO_AUDIT_KEY=... sh scripts/verify_audit_with_openssl.sh audit.jsonl <sto
 ## 4. What was NOT verified (read this before relying on the code)
 
 * **No real Kafka broker was available** in the environment used by the author (Maven Central / apache.org are unreachable, no Docker). The real-broker tests exist and are wired into CI; **until that job is green, treat the Kafka path as unproven in production conditions** (rebalances, partitions >1, broker failover, exactly-once are untested).
-* **The native structured-output hooks** (Anthropic forced tool use, OpenAI `json_schema`) are checked against fake SDK clients only.
+* **The native structured-output hooks** (Anthropic tool call with `tool_choice: auto`, OpenAI `json_schema`) are checked against fake SDK clients only.
 * **FAISS concurrency scaling** was not measurable (1 CPU); latency/recall numbers are from that single machine.
 * **`HashingEmbedder` is lexical**; semantic quality and the right similarity threshold depend on your embedder and data.
 * **At-least-once, not exactly-once**: handlers must be idempotent; a stuck handler thread is abandoned, not killed.
