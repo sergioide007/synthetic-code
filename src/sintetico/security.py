@@ -72,43 +72,43 @@ class Mitigation:
 THREAT_MATRIX: List[Threat] = [
     Threat(
         ThreatCategory.PROMPT_INJECTION,
-        "Inyección de instrucciones",
-        "Instrucciones ocultas que piden ignorar reglas anteriores",
+        "Instruction injection",
+        "Hidden instructions asking the model to ignore previous rules",
         "critical",
         "high",
     ),
     Threat(
         ThreatCategory.TOOL_ABUSE,
-        "Uso malicioso de herramientas",
-        "Ejecutar comandos o llamadas no autorizadas vía una tool",
+        "Malicious tool use",
+        "Running unauthorized commands or calls through a tool",
         "critical",
         "medium",
     ),
     Threat(
         ThreatCategory.CONTEXT_POISONING,
-        "Envenenamiento de contexto RAG",
-        "Documentos indexados con instrucciones ocultas para el LLM",
+        "RAG context poisoning",
+        "Indexed documents carrying hidden instructions for the LLM",
         "high",
         "medium",
     ),
     Threat(
         ThreatCategory.DATA_LEAKAGE,
-        "Filtración de datos sensibles",
-        "La respuesta del modelo contiene PII o secretos",
+        "Sensitive data leakage",
+        "The model's answer contains PII or secrets",
         "critical",
         "high",
     ),
     Threat(
         ThreatCategory.AUTHORIZATION_BYPASS,
-        "Bypass de autorización",
-        "El agente actúa fuera de los permisos concedidos al usuario",
+        "Authorization bypass",
+        "The agent acts outside the permissions granted to the user",
         "critical",
         "low",
     ),
     Threat(
         ThreatCategory.RESOURCE_EXHAUSTION,
-        "DoS por consumo de tokens",
-        "Peticiones costosas repetidas que agotan presupuesto/cuota",
+        "Token-exhaustion DoS",
+        "Repeated expensive requests that drain the budget or quota",
         "high",
         "medium",
     ),
@@ -137,9 +137,11 @@ class SecurityScanner:
     _USER_INPUT_PATTERNS = (
         (r"ignora.{0,20}instrucciones", "prompt_injection"),
         (r"ignore.{0,20}(previous|above).{0,20}instructions", "prompt_injection"),
-        (r"\bsystem prompt\b", "exfiltracion_de_contexto"),
+        (r"\bsystem prompt\b", "context_exfiltration"),
         (r"\bact(úa|ua)? como (dan|jailbreak)\b", "jailbreak_roleplay"),
-        (r"\brepite (todo|literalmente) lo anterior\b", "exfiltracion_de_contexto"),
+        (r"\b(act|pretend) (as|to be) (dan|a jailbroken)\b", "jailbreak_roleplay"),
+        (r"\brepite (todo|literalmente) lo anterior\b", "context_exfiltration"),
+        (r"\brepeat (everything|verbatim) (above|before)\b", "context_exfiltration"),
     )
 
     def __init__(self, secondary_classifier: Optional[Callable[[str], bool]] = None):
@@ -150,7 +152,7 @@ class SecurityScanner:
         lowered = system_prompt.lower()
         for pattern in self._SYSTEM_PROMPT_BYPASS_PATTERNS:
             if re.search(pattern, lowered):
-                findings.append({"severity": "high", "vulnerability": "Instrucciones de bypass detectadas"})
+                findings.append({"severity": "high", "vulnerability": "Bypass instructions detected"})
                 break
         return findings
 
@@ -167,7 +169,7 @@ class SecurityScanner:
             except Exception:  # noqa: BLE001
                 # A failure of the secondary classifier must not bring the scan
                 # down: it degrades to the regex result already computed.
-                logger.exception("El secondary_classifier de SecurityScanner falló; se ignora su veredicto")
+                logger.exception("SecurityScanner secondary_classifier failed; ignoring its verdict")
 
         return {"is_malicious": len(findings) > 0, "findings": findings}
 
@@ -179,7 +181,7 @@ class SecurityScanner:
                 {
                     "risk": "description_insufficient",
                     "severity": "medium",
-                    "detail": "Una descripción corta dificulta que el modelo entienda cuándo NO usar la herramienta",
+                    "detail": "A short description makes it hard for the model to know when NOT to use the tool",
                 }
             )
         if tool.get("permission") == "admin" and not tool.get("requires_approval", False):
@@ -219,7 +221,7 @@ class MCPHost:
             import jsonschema
         except ImportError as exc:
             raise SchemaValidationUnavailableError(
-                "Instala jsonschema para validación MCP: pip install jsonschema"
+                "Install jsonschema for MCP validation: pip install jsonschema"
             ) from exc
         self._validator = jsonschema
 
@@ -242,10 +244,10 @@ class MCPHost:
         if tool.requires_approval and not approval_granted:
             return {
                 "status": "pending_approval",
-                "message": f"'{tool_name}' requiere aprobación humana antes de ejecutarse",
+                "message": f"'{tool_name}' requires human approval before it runs",
             }
 
-        return {"result": f"Ejecutado {tool_name} con {input_data}"}
+        return {"result": f"Executed {tool_name} with {input_data}"}
 
 
 # Backwards-compatible alias for the original (misspelled) name.

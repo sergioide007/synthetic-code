@@ -89,7 +89,7 @@ class AgentCircuitBreaker:
         recent = self.history[-self.max_cycles :]
         if len({r["thought_hash"] for r in recent}) == 1:
             self.state = "open"
-            self.failure_reason = f"{self.max_cycles} ciclos de pensamiento idénticos"
+            self.failure_reason = f"{self.max_cycles} identical thought cycles"
 
     def _check_tool_flooding(self) -> None:
         if len(self.tool_invocation_window) < self.window_size:
@@ -202,5 +202,5 @@ class AgentHarness:
             return AgentResult(content, tokens_in + tokens_out, cost, self.budget.remaining)
         except Exception as exc:
             self.breaker.record_cycle(thought="error", tools=[], observation=str(exc))
-            logger.exception("Fallo ejecutando agent_fn para correlation_id=%s", correlation_id)
+            logger.exception("agent_fn failed for correlation_id=%s", correlation_id)
             raise

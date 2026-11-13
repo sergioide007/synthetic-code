@@ -1,11 +1,11 @@
-# trazabilidad — Logging estructurado y agente ReAct con trazabilidad completa
+# trazabilidad: structured logging and a ReAct agent with full traceability
 """
-Logger estructurado y agente ReAct con trazabilidad completa.
+Structured logger and ReAct agent with full traceability.
 
-Uso:
+Usage:
     from trazabilidad import StructuredAgentLogger, ReActAgentWithLogging
 
-    logger = StructuredAgentLogger(agent_id="mi-agente")
+    logger = StructuredAgentLogger(agent_id="my-agent")
     agent = ReActAgentWithLogging(llm_call, tools, logger)
     result = agent.run(user_query="...")
 """

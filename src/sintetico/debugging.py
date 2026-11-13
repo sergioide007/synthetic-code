@@ -44,7 +44,7 @@ class ProductionDebugAgent:
     MIN_AFFECTED_USERS_TO_ESCALATE = 10
 
     def __init__(self, llm_call: Optional[Callable[[str], str]] = None):
-        self.llm_call = llm_call or (lambda prompt: '{"root_cause": "Error de conexión", "confidence": 0.8}')
+        self.llm_call = llm_call or (lambda prompt: '{"root_cause": "Connection error", "confidence": 0.8}')
         self.progress = DebugProgress(DebugPhase.DETECTION, 0, [], 0)
 
     def start_debug_session(self, alert: dict) -> DebugProgress:
@@ -56,13 +56,13 @@ class ProductionDebugAgent:
 
         self.progress.phase = DebugPhase.ISOLATION
         self.progress.phase = DebugPhase.DIAGNOSIS
-        response = self.llm_call("Analiza logs y determina la causa raíz probable.")
+        response = self.llm_call("Analyze the logs and determine the most likely root cause. Answer in JSON with root_cause and confidence.")
         try:
             data = json.loads(response)
-            self.progress.root_cause = data.get("root_cause", "Desconocida")
+            self.progress.root_cause = data.get("root_cause", "Unknown")
         except json.JSONDecodeError:
-            logger.warning("Respuesta del LLM no es JSON válido; se usa causa raíz por defecto")
-            self.progress.root_cause = "No determinada automáticamente; requiere análisis manual"
+            logger.warning("LLM answer is not valid JSON; using the default root cause")
+            self.progress.root_cause = "Not determined automatically; needs manual analysis"
 
         self.progress.phase = DebugPhase.PATCH
         self.progress.patch_generated = True
@@ -94,13 +94,13 @@ class DebugTimeoutGuard:
 
     def should_timeout(self) -> Tuple[bool, str]:
         if not self.started_at:
-            return False, "No iniciado"
+            return False, "Not started"
         now = datetime.now(timezone.utc)
         elapsed = (now - self.started_at).total_seconds()
         if elapsed > self.ABSOLUTE_TIMEOUT_SECONDS:
-            return True, "Timeout absoluto"
+            return True, "Absolute timeout"
         if self.last_progress_at:
             idle = (now - self.last_progress_at).total_seconds()
             if idle > self.max_idle_minutes * 60:
-                return True, f"Inactividad > {self.max_idle_minutes} min"
+                return True, f"No progress for > {self.max_idle_minutes} min"
         return False, "OK"

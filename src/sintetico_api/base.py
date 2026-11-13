@@ -1,24 +1,22 @@
 """
-sintetico_api.base — Interfaz común para backends de almacenamiento de
-trazas. `TraceStore` (SQLite) y `PostgresTraceStore` implementan este
-mismo contrato, así que la capa de API (`deps.get_store`) puede elegir
-uno u otro según el entorno sin que ningún router/servicio tenga que
-saberlo.
+sintetico_api.base: common interface for trace storage backends.
+`TraceStore` (SQLite) and `PostgresTraceStore` implement the same contract, so
+the API layer (`deps.get_store`) can pick either one from the environment
+without any router or service having to know.
 
-Por qué dos backends:
-- **SQLite** (`sintetico_api.store.TraceStore`): cero configuración, un
-  fichero local. Perfecto para la demo del libro y para desarrollo, pero
-  no compartido entre procesos/instancias.
-- **Postgres** (`sintetico_api.postgres_store.PostgresTraceStore`): para
-  un despliegue real con más de una instancia del servicio detrás de un
-  balanceador. Usa `LISTEN`/`NOTIFY` nativo de Postgres para que el
-  live-tail (Server-Sent Events) funcione correctamente entre instancias
-  — un evento insertado por la instancia A se ve en tiempo real en un
-  cliente conectado a la instancia B.
+Why two backends:
+- **SQLite** (`sintetico_api.store.TraceStore`): zero configuration, one local
+  file. Perfect for the book's demo and for development, but not shared
+  between processes or instances.
+- **Postgres** (`sintetico_api.postgres_store.PostgresTraceStore`): for a real
+  deployment with more than one instance behind a load balancer. It uses
+  Postgres's native `LISTEN`/`NOTIFY` so the live tail (Server-Sent Events)
+  works across instances: an event inserted by instance A shows up in real
+  time on a client connected to instance B.
 
-`sintetico.budget.TokenBudget` ya resuelve el mismo problema (local vs.
-distribuido) con `BudgetBackend`/`RedisBudgetBackend`; esta es la misma
-idea aplicada al almacén de trazas.
+`sintetico.budget.TokenBudget` solves the same local-vs-distributed problem
+with `BudgetBackend`/`RedisBudgetBackend`; this is the same idea applied to the
+trace store.
 """
 
 from __future__ import annotations
@@ -30,17 +28,17 @@ __all__ = ["BaseTraceStore"]
 
 
 class BaseTraceStore(ABC):
-    """Contrato que debe cumplir cualquier backend de trazas/ejecuciones."""
+    """Contract every trace/run backend must fulfil."""
 
-    # ─── Eventos ────────────────────────────────────────────────────
+    # ─── Events ────────────────────────────────────────────────────
     @abstractmethod
     def insert_event(self, entry: Dict[str, Any], run_id: Optional[str] = None, pillar: Optional[str] = None) -> int:
-        """Inserta un evento de traza y lo publica a los suscriptores de
-        live-tail. Devuelve el id asignado."""
+        """Insert a trace event and publish it to live-tail subscribers.
+        Return the assigned id."""
 
     @abstractmethod
     def get_trace(self, correlation_id: str) -> List[Dict[str, Any]]:
-        """Todos los eventos de una traza, en orden cronológico."""
+        """Every event of a trace, in chronological order."""
 
     @abstractmethod
     def list_events(
@@ -51,9 +49,9 @@ class BaseTraceStore(ABC):
         limit: int = 200,
         after_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """Eventos recientes, opcionalmente filtrados."""
+        """Recent events, optionally filtered."""
 
-    # ─── Ejecuciones (runs) ─────────────────────────────────────────
+    # ─── Runs ─────────────────────────────────────────
     @abstractmethod
     def create_run(self, pillar: str, team_id: str = "demo") -> str: ...
 
@@ -66,15 +64,15 @@ class BaseTraceStore(ABC):
     @abstractmethod
     def list_runs(self, pillar: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]: ...
 
-    # ─── Métricas ───────────────────────────────────────────────────
+    # ─── Metrics ───────────────────────────────────────────────────
     @abstractmethod
     def metrics_summary(self, window_minutes: int = 60) -> Dict[str, Any]: ...
 
     # ─── Live tail (pub-sub) ────────────────────────────────────────
     @abstractmethod
     def subscribe(self) -> "Any":
-        """Registra un suscriptor para live-tail; devuelve un objeto tipo
-        `queue.Queue` del que se puede hacer `.get()`."""
+        """Register a live-tail subscriber; return a `queue.Queue`-like
+        object you can `.get()` from."""
 
     @abstractmethod
     def unsubscribe(self, subscriber: "Any") -> None: ...

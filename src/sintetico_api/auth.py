@@ -1,17 +1,16 @@
 """
-sintetico_api.auth — Autenticación opcional por API key.
+sintetico_api.auth: optional API-key authentication.
 
-Diseño deliberado: **si `SINTETICO_API_KEY` no está configurada, la API
-no exige autenticación** (modo demo local, el comportamiento por defecto
-de todo este proyecto). En cuanto se configura esa variable de entorno,
-todos los endpoints protegidos exigen la cabecera `X-API-Key` con ese
-valor exacto, comparada con `secrets.compare_digest` (comparación en
-tiempo constante, para no filtrar la key por temporización).
+Deliberate design: **if `SINTETICO_API_KEY` is not set, the API requires no
+authentication** (local demo mode, the default behaviour of the whole project).
+As soon as that environment variable is set, every protected endpoint requires
+the `X-API-Key` header with exactly that value, compared with
+`secrets.compare_digest` (constant time, so the key cannot leak through timing).
 
-No es OAuth2/JWT ni gestión de usuarios — sería sobre-ingeniería para lo
-que este servicio necesita (una única key de servicio, como
-`ANTHROPIC_API_KEY` de Anthropic). Si en el futuro hace falta
-autenticación por usuario, este módulo es el punto de extensión natural.
+This is not OAuth2/JWT or user management, which would be over-engineering for
+what this service needs (a single service key, like Anthropic's
+`ANTHROPIC_API_KEY`). If per-user authentication is ever needed, this module is
+the natural extension point.
 """
 
 from __future__ import annotations
@@ -33,21 +32,20 @@ def is_auth_enabled() -> bool:
 
 
 def require_api_key(x_api_key: Optional[str] = Security(_api_key_header)) -> None:
-    """Dependencia de FastAPI: exige `X-API-Key` si `SINTETICO_API_KEY`
-    está configurada en el entorno del servidor. No hace nada si no lo
-    está (modo demo sin autenticación).
+    """FastAPI dependency: require `X-API-Key` when `SINTETICO_API_KEY` is set
+    in the server environment. Does nothing otherwise (demo mode, no auth).
 
-    Se declara como esquema de seguridad (`APIKeyHeader`), no como un
-    `Header()` suelto, para que Swagger UI muestre el botón "Authorize"
-    y quede documentado en el `openapi.json` como corresponde.
+    It is declared as a security scheme (`APIKeyHeader`), not as a bare
+    `Header()`, so Swagger UI shows the "Authorize" button and the scheme is
+    documented in `openapi.json`.
     """
     expected = os.environ.get("SINTETICO_API_KEY")
     if not expected:
-        return  # autenticación desactivada: modo demo local
+        return  # authentication disabled: local demo mode
 
     if not x_api_key or not secrets.compare_digest(x_api_key, expected):
         raise HTTPException(
             status_code=401,
-            detail="Falta o es inválida la cabecera X-API-Key. Este servidor requiere autenticación.",
+            detail="Missing or invalid X-API-Key header. This server requires authentication.",
             headers={"WWW-Authenticate": "API-Key"},
         )

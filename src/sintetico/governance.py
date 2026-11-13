@@ -60,9 +60,9 @@ class RACIGate:
     def _validate(self) -> None:
         accountable = [actor for actor, level in self.assignments.items() if level == RACILevel.ACCOUNTABLE]
         if len(accountable) != 1:
-            raise ValueError(f"Debe haber exactamente 1 Accountable para '{self.activity}'")
+            raise ValueError(f"There must be exactly 1 Accountable for '{self.activity}'")
         if any("agent" in actor.lower() for actor in accountable):
-            raise ValueError("Un agente nunca puede ser Accountable")
+            raise ValueError("An agent can never be Accountable")
 
     def can_proceed(self, pending_approval: bool = False) -> bool:
         return not pending_approval
@@ -103,7 +103,7 @@ class TrueCostTracker:
 
     def __init__(self, hourly_rate_usd: float):
         if hourly_rate_usd <= 0:
-            raise ValueError("hourly_rate_usd debe ser positivo")
+            raise ValueError("hourly_rate_usd must be positive")
         self.hourly_rate = hourly_rate_usd
         self.token_cost_usd = 0.0
         self.verify_minutes_total = 0.0
@@ -266,7 +266,9 @@ class EmergencyOverrideGateway:
         requestor: str,
     ) -> str:
         if len(justification.strip()) < 10:
-            raise ValueError("La justificación debe ser sustancial (>=10 caracteres)")
+            raise ValueError("The justification must be substantial (at least 10 characters)")
+        if not requestor or not requestor.strip():
+            raise ValueError("An override request must name its requestor")
         self._id_counter += 1
         req_id = f"OVR-{self._id_counter:04d}"
         self.pending_requests[req_id] = OverrideRequest(
@@ -275,9 +277,16 @@ class EmergencyOverrideGateway:
         return req_id
 
     def approve_override(self, request_id: str, approver: str) -> Dict:
+        """Approve a pending override. Separation of duties: the approver must be a
+        named person other than the requestor; otherwise the request stays pending."""
         req = self.pending_requests.get(request_id)
         if not req:
             return {"status": "error", "message": "Request not found"}
+        if not approver or not approver.strip():
+            return {"status": "rejected", "request_id": request_id, "message": "An approver must be named"}
+        if approver.strip().lower() == req.requestor.strip().lower():
+            return {"status": "rejected", "request_id": request_id,
+                    "message": "The requestor cannot approve their own override"}
         req.approver = approver
         req.risk_acknowledgment = True
         req.approved_at = datetime.now(timezone.utc)
@@ -306,7 +315,11 @@ class EscalationDecision:
 
 
 class EscalationPolicy:
-    DEFAULT_CRITICAL_KEYWORDS = ("cancelar", "demanda", "abogado", "ceo")
+    # English and Spanish by default; pass your own list for other languages or domains.
+    DEFAULT_CRITICAL_KEYWORDS = (
+        "cancel", "lawsuit", "lawyer", "attorney", "ceo", "talk to a human", "speak to a person",
+        "cancelar", "demanda", "abogado",
+    )
 
     def __init__(
         self, confidence_threshold: float = 0.7, max_retries: int = 2, critical_keywords: Optional[List[str]] = None
@@ -321,13 +334,13 @@ class EscalationPolicy:
         query_lower = ticket.user_query.lower()
         matched = [kw for kw in self.critical_keywords if kw in query_lower]
         if matched:
-            return EscalationDecision(True, f"Palabra crítica detectada: {matched[0]}", 0.0, ticket)
+            return EscalationDecision(True, f"Critical keyword detected: {matched[0]}", 0.0, ticket)
         if agent_confidence < self.confidence_threshold:
             return EscalationDecision(
-                True, f"Confianza insuficiente ({agent_confidence:.2f})", agent_confidence, ticket
+                True, f"Insufficient confidence ({agent_confidence:.2f})", agent_confidence, ticket
             )
         if retry_count >= self.max_retries:
-            return EscalationDecision(True, "Reintentos agotados", agent_confidence, ticket)
+            return EscalationDecision(True, "Retries exhausted", agent_confidence, ticket)
         return EscalationDecision(False, "OK", agent_confidence, ticket)
 
 
@@ -345,7 +358,7 @@ class EscalationHandler:
                 "conversation_length": len(conversation) if conversation else 0,
             }
         )
-        return {"message": "Escalado a humano", "ticket_id": ticket_id}
+        return {"message": "Escalated to a human", "ticket_id": ticket_id}
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -449,18 +462,18 @@ class DatabaseMigrationGate:
         reasons = []
         if downtime_minutes > self.MAX_DOWNTIME_MINUTES:
             reasons.append(
-                f"Downtime > {self.MAX_DOWNTIME_MINUTES} min no permitido sin ventana de mantenimiento aprobada"
+                f"Downtime > {self.MAX_DOWNTIME_MINUTES} min is not allowed without an approved maintenance window"
             )
         if len(rollback_plan) < self.MIN_ROLLBACK_PLAN_CHARS:
-            reasons.append("Plan de rollback insuficiente (mínimo 50 caracteres)")
+            reasons.append("Rollback plan too thin (minimum 50 characters)")
         if not justification.strip():
-            reasons.append("Falta justificación de negocio")
+            reasons.append("Business justification missing")
         if volume_gb > self.LARGE_VOLUME_GB_THRESHOLD and "cto" not in self.APPROVALS_REQUIRED:
             # Note: with the current list of approvers this condition is never
             # met (the CTO is already mandatory). It is kept explicit because,
             # if APPROVALS_REQUIRED is ever reduced, this threshold must still
             # require the CTO's signature for large migrations.
-            reasons.append(f"Volumen > {self.LARGE_VOLUME_GB_THRESHOLD}GB requiere aprobación explícita del CTO")
+            reasons.append(f"Volume > {self.LARGE_VOLUME_GB_THRESHOLD} GB requires the CTO's explicit approval")
         return {"valid": len(reasons) == 0, "reasons": reasons}
 
     def approve_migration(self, migration_id: str, approver: str) -> Dict:
@@ -468,7 +481,7 @@ class DatabaseMigrationGate:
         if not migration:
             return {"status": "error", "reason": "Not found"}
         if approver not in self.APPROVALS_REQUIRED:
-            return {"status": "error", "reason": "No autorizado"}
+            return {"status": "error", "reason": "Not authorized"}
         if approver in migration["approvals"]:
             return {"status": "already_approved"}
         migration["approvals"].append(approver)

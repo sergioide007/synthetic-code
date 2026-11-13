@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════
-   Código Sintético — Agent Observability
-   Sistema de diseño: consola de operaciones oscura, densa en datos.
+   Synthetic Code: Agent Observability
+   Design system: a dark, data-dense operations console.
    ══════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -62,7 +62,7 @@ a { color: inherit; }
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 
-/* ─── Layout general ─── */
+/* ─── General layout ─── */
 .app {
   display: grid;
   grid-template-columns: 232px 1fr;
@@ -177,7 +177,7 @@ a { color: inherit; }
 .auth-btn.is-locked { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, var(--border)); }
 .auth-btn.is-unlocked { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, var(--border)); }
 
-/* ─── Modal de API key ─── */
+/* ─── API key modal ─── */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(4,6,10,0.6); backdrop-filter: blur(2px);
   z-index: 50; opacity: 0; transition: opacity 0.18s ease;
@@ -206,7 +206,7 @@ a { color: inherit; }
 .modal-btn-primary { background: var(--accent); color: #0A0D12; border-color: transparent; }
 .modal-btn-primary:hover { filter: brightness(1.08); }
 
-/* ─── Vistas ─── */
+/* ─── Views ─── */
 .view { padding: 4px 32px 40px; display: flex; flex-direction: column; gap: 22px; }
 
 /* ─── KPI cards ─── */
@@ -248,7 +248,7 @@ a { color: inherit; }
 .run-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .run-btn:disabled { opacity: 0.55; cursor: progress; }
 
-/* ─── Panels genéricos ─── */
+/* ─── Generic panels ─── */
 .panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
 .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .panel-head h3 { font-family: var(--font-display); font-size: 14px; margin: 0; font-weight: 600; }
@@ -258,7 +258,7 @@ a { color: inherit; }
 @media (max-width: 1100px) { .charts-row { grid-template-columns: 1fr; } }
 .chart-panel { min-height: 240px; }
 
-/* ─── Tabla de trazas ─── */
+/* ─── Trace table ─── */
 .table-wrap { overflow-x: auto; }
 .trace-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .trace-table th {
@@ -285,7 +285,7 @@ a { color: inherit; }
 .corr-id { color: var(--text-secondary); }
 .pillar-tag { color: var(--text-secondary); font-size: 11.5px; }
 
-/* ─── Agente en vivo ─── */
+/* ─── Live agent ─── */
 .agent-layout { display: grid; grid-template-columns: 1fr 280px; gap: 14px; align-items: start; }
 @media (max-width: 900px) { .agent-layout { grid-template-columns: 1fr; } }
 
@@ -333,7 +333,7 @@ a { color: inherit; }
 .api-link-card strong { font-family: var(--font-display); font-size: 13.5px; color: var(--accent); }
 .api-link-card span { font-size: 11.5px; color: var(--text-secondary); font-family: var(--font-mono); }
 
-/* ─── Drawer de traza (waterfall) — pieza de firma ─── */
+/* ─── Trace drawer (waterfall): the signature piece ─── */
 .drawer-backdrop {
   position: fixed; inset: 0; background: rgba(4,6,10,0.6); backdrop-filter: blur(2px);
   z-index: 40; opacity: 0; transition: opacity 0.18s ease;

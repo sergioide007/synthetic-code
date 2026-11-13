@@ -1,17 +1,17 @@
-"""Dependencias compartidas de FastAPI.
+"""Shared FastAPI dependencies.
 
-`get_store` expone una única instancia de `BaseTraceStore` por proceso
-(patrón singleton perezoso). El backend se elige automáticamente:
+`get_store` exposes a single `BaseTraceStore` instance per process (lazy
+singleton). The backend is chosen automatically:
 
-- Si `SINTETICO_API_DB_URL` empieza por `postgres://` o `postgresql://`,
-  se usa `PostgresTraceStore` (recomendado para más de una instancia del
-  servicio, ver `sintetico_api.postgres_store`).
-- En cualquier otro caso, se usa `TraceStore` (SQLite) sobre el fichero
-  indicado en `SINTETICO_API_DB_PATH` (por defecto uno local). Es el
-  modo correcto para la demo del libro y para desarrollo.
+- If `SINTETICO_API_DB_URL` starts with `postgres://` or `postgresql://`,
+  `PostgresTraceStore` is used (recommended for more than one service
+  instance; see `sintetico_api.postgres_store`).
+- Otherwise `TraceStore` (SQLite) is used on the file named in
+  `SINTETICO_API_DB_PATH` (a local file by default). That is the right mode
+  for the book's demo and for development.
 
-Los tests pueden sobreescribir esta dependencia con
-`app.dependency_overrides[get_store] = lambda: store_de_prueba`.
+Tests can override this dependency with
+`app.dependency_overrides[get_store] = lambda: test_store`.
 """
 
 from __future__ import annotations
@@ -47,8 +47,8 @@ def get_store() -> BaseTraceStore:
 
 
 def reset_store_for_testing() -> None:
-    """Sólo para tests: fuerza que la próxima llamada a `get_store` cree
-    una instancia nueva."""
+    """Tests only: force the next call to `get_store` to create a new
+    instance."""
     global _store
     if _store is not None:
         _store.close()

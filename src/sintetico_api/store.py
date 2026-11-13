@@ -1,12 +1,12 @@
 """
-sintetico_api.store — Persistencia de trazas y ejecuciones para el
-dashboard de observabilidad, y un pub-sub en memoria para el live-tail
-(estilo "Live Tail" de Datadog / CloudWatch Logs Insights).
+sintetico_api.store: trace and run persistence for the observability
+dashboard, plus an in-memory pub-sub for the live tail (in the style of
+Datadog's "Live Tail" or CloudWatch Logs Insights).
 
-Deliberadamente NO depende de FastAPI ni Pydantic: es lógica de dominio
-pura sobre `sqlite3` (stdlib), así que se puede probar con `pytest` sin
-necesidad de un cliente HTTP ni de tener esos paquetes instalados. La capa
-web (routers/schemas) es un adaptador delgado sobre esta clase.
+It deliberately does NOT depend on FastAPI or Pydantic: it is pure domain
+logic over `sqlite3` (stdlib), so it can be tested with `pytest` without an
+HTTP client or those packages installed. The web layer (routers/schemas) is a
+thin adapter over this class.
 """
 
 from __future__ import annotations
@@ -66,16 +66,15 @@ CREATE INDEX IF NOT EXISTS idx_runs_started ON runs(started_at);
 
 
 class TraceStore(BaseTraceStore):
-    """Almacén de trazas y ejecuciones respaldado por SQLite.
+    """Trace and run store backed by SQLite.
 
-    Implementación de referencia de `BaseTraceStore` para un único
-    proceso/instancia (demo del libro, desarrollo local). Para un
-    despliegue con varias instancias, usa
-    `sintetico_api.postgres_store.PostgresTraceStore`, que respeta el
-    mismo contrato.
+    Reference implementation of `BaseTraceStore` for a single process or
+    instance (the book's demo, local development). For a deployment with
+    several instances, use `sintetico_api.postgres_store.PostgresTraceStore`,
+    which honours the same contract.
 
-    Uso típico en el proceso de la API (un único `TraceStore` compartido,
-    instanciado una vez en el arranque de la aplicación):
+    Typical use inside the API process (one shared `TraceStore`, created once
+    when the application starts):
 
         store = TraceStore("traces.db")
         run_id = store.create_run(pillar="orchestration", team_id="demo")
@@ -94,12 +93,12 @@ class TraceStore(BaseTraceStore):
             self._conn.commit()
         self._subscribers: List["queue.Queue[Dict[str, Any]]"] = []
 
-    # ─── Eventos ────────────────────────────────────────────────────
+    # ─── Events ────────────────────────────────────────────────────
     def insert_event(self, entry: Dict[str, Any], run_id: Optional[str] = None, pillar: Optional[str] = None) -> int:
-        """Inserta un evento de traza. `entry` sigue la forma que produce
-        `StructuredAgentLogger` (ver `trazabilidad.logger.StructuredLogEntry`),
-        pero acepta cualquier dict con esas claves — no depende de esa
-        clase para no crear un acoplamiento circular entre paquetes.
+        """Insert a trace event. `entry` follows the shape produced by
+        `StructuredAgentLogger` (see `trazabilidad.logger.StructuredLogEntry`),
+        but any dict with those keys is accepted; it does not depend on that
+        class, to avoid a circular dependency between packages.
         """
         payload = entry.get("payload", {}) or {}
         row = {
@@ -134,13 +133,13 @@ class TraceStore(BaseTraceStore):
             self._trim_if_needed()
 
         row["id"] = event_id
-        row["payload"] = payload  # publicar el dict, no el JSON serializado
+        row["payload"] = payload  # publish the dict, not the serialized JSON
         self._publish(row)
         return event_id
 
     def _trim_if_needed(self) -> None:
-        """Poda eventos antiguos si se supera `max_events` (contención de
-        memoria/disco para una demo de larga duración)."""
+        """Prune old events once `max_events` is exceeded (keeps memory and
+        disk bounded for a long-running demo)."""
         cur = self._conn.execute("SELECT COUNT(*) FROM events")
         count = cur.fetchone()[0]
         if count > self.max_events:
@@ -152,8 +151,8 @@ class TraceStore(BaseTraceStore):
             self._conn.commit()
 
     def get_trace(self, correlation_id: str) -> List[Dict[str, Any]]:
-        """Devuelve todos los eventos de una traza, ordenados cronológicamente
-        (la "waterfall" que se renderiza en el dashboard)."""
+        """Return every event of a trace in chronological order (the
+        "waterfall" the dashboard renders)."""
         with self._lock:
             cur = self._conn.execute("SELECT * FROM events WHERE correlation_id = ? ORDER BY id ASC", (correlation_id,))
             return [self._row_to_dict(r) for r in cur.fetchall()]
@@ -185,7 +184,7 @@ class TraceStore(BaseTraceStore):
         with self._lock:
             cur = self._conn.execute(query, params)
             rows = [self._row_to_dict(r) for r in cur.fetchall()]
-        rows.reverse()  # devolver en orden cronológico ascendente
+        rows.reverse()  # return in ascending chronological order
         return rows
 
     @staticmethod
@@ -197,7 +196,7 @@ class TraceStore(BaseTraceStore):
             d["payload"] = {}
         return d
 
-    # ─── Ejecuciones (runs) ─────────────────────────────────────────
+    # ─── Runs ─────────────────────────────────────────
     def create_run(self, pillar: str, team_id: str = "demo") -> str:
         run_id = new_id(pillar)
         with self._lock:
@@ -247,7 +246,7 @@ class TraceStore(BaseTraceStore):
             result.append(d)
         return result
 
-    # ─── Métricas agregadas ─────────────────────────────────────────
+    # ─── Aggregated metrics ─────────────────────────────────────────
     def metrics_summary(self, window_minutes: int = 60) -> Dict[str, Any]:
         cutoff = datetime.now(timezone.utc).timestamp() - window_minutes * 60
         with self._lock:
@@ -266,7 +265,7 @@ class TraceStore(BaseTraceStore):
             try:
                 ts = datetime.fromisoformat(row["timestamp"]).timestamp()
             except (ValueError, TypeError):
-                ts = cutoff  # si no se puede parsear, no descartar el evento
+                ts = cutoff  # if it cannot be parsed, keep the event
             if ts < cutoff:
                 continue
             total_events += 1
@@ -300,8 +299,8 @@ class TraceStore(BaseTraceStore):
 
     # ─── Live tail (pub-sub) ────────────────────────────────────────
     def subscribe(self) -> "queue.Queue[Dict[str, Any]]":
-        """Registra un nuevo suscriptor para live-tail. Cada evento nuevo
-        insertado se publica a todas las colas suscritas."""
+        """Register a new live-tail subscriber. Every newly inserted event is
+        published to all subscribed queues."""
         q: "queue.Queue[Dict[str, Any]]" = queue.Queue(maxsize=1000)
         with self._lock:
             self._subscribers.append(q)
@@ -319,9 +318,9 @@ class TraceStore(BaseTraceStore):
             try:
                 q.put_nowait(event)
             except queue.Full:
-                # Suscriptor lento (cliente SSE desconectado o saturado):
-                # se descarta el evento para él en vez de bloquear al
-                # productor. Es la semántica correcta para un live-tail.
+                # Slow subscriber (SSE client gone or saturated): drop the
+                # event for it instead of blocking the producer. That is the
+                # right semantics for a live tail.
                 pass
 
     def close(self) -> None:

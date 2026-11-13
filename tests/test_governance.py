@@ -45,7 +45,35 @@ class TestEmergencyOverrideGateway:
     def test_short_justification_is_rejected(self):
         gateway = EmergencyOverrideGateway()
         with pytest.raises(ValueError):
-            gateway.request_override("run-1", "x", OverrideReason.KNOWN_ISSUE, "corto", "dev")
+            gateway.request_override("run-1", "x", OverrideReason.KNOWN_ISSUE, "short", "dev")
+
+    def test_request_without_requestor_is_rejected(self):
+        gateway = EmergencyOverrideGateway()
+        with pytest.raises(ValueError):
+            gateway.request_override("run-1", "x", OverrideReason.KNOWN_ISSUE, "confirmed false positive", "  ")
+
+    @pytest.mark.parametrize("approver", ["dev-lead", "DEV-LEAD", " dev-lead "])
+    def test_requestor_cannot_approve_own_override(self, approver):
+        """Separation of duties: self-approval is refused and the request stays pending."""
+        gateway = EmergencyOverrideGateway()
+        req_id = gateway.request_override(
+            "run-1", "low TrustScore", OverrideReason.FALSE_POSITIVE, "confirmed false positive by hand", "dev-lead"
+        )
+        result = gateway.approve_override(req_id, approver)
+        assert result["status"] == "rejected"
+        assert gateway.override_history == []
+        assert req_id in gateway.pending_requests
+        # a different person can still approve it afterwards
+        assert gateway.approve_override(req_id, "eng-manager")["status"] == "approved"
+        assert gateway.override_history[0].approver == "eng-manager"
+
+    def test_empty_approver_is_rejected(self):
+        gateway = EmergencyOverrideGateway()
+        req_id = gateway.request_override(
+            "run-1", "low TrustScore", OverrideReason.FALSE_POSITIVE, "confirmed false positive by hand", "dev-lead"
+        )
+        assert gateway.approve_override(req_id, "")["status"] == "rejected"
+        assert req_id in gateway.pending_requests
 
 
 class TestAutonomyGate:

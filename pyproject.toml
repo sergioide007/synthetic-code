@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codigo-sintetico"
-version = "2.2.1"
+version = "2.2.2"
 description = "Reference patterns for production multi-agent AI systems: budgets, audit trails, eval gates, bounded autonomy. Companion code of the book Synthetic Code."
 readme = "README.md"
 requires-python = ">=3.10"

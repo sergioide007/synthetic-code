@@ -95,7 +95,7 @@ class AsyncAIGateway:
                 task = self._task_cache.get(task_id)
                 if task:
                     task.status = TaskStatus.COMPLETED
-                    task.result = f"Resultado de {task_type}"
+                    task.result = f"Result of {task_type}"
         except Exception as exc:  # noqa: BLE001
             with self._lock:
                 task = self._task_cache.get(task_id)
@@ -150,7 +150,7 @@ class SwarmTokenOrchestrator:
         self, session_id: str, total_budget_tokens: int, warning_threshold: float = 0.70, halt_threshold: float = 0.90
     ):
         if total_budget_tokens <= 0:
-            raise ValueError("total_budget_tokens debe ser positivo")
+            raise ValueError("total_budget_tokens must be positive")
         self.session_id = session_id
         self.total_budget = total_budget_tokens
         self.spent_tokens = 0
@@ -191,10 +191,10 @@ class ModelRouter:
 
     RULES: List[Tuple[str, str]] = [
         (r"^(hola|hi|buenas|hey)\b", "haiku"),
-        (r"\b(estado|status|d[oó]nde)\b", "haiku"),
+        (r"\b(estado|status|d[oó]nde|where)\b", "haiku"),
         (r"\b(error|debug|fallo|bug)\b", "sonnet"),
         (r"\b(c[oó]digo|code|review|revisar)\b", "sonnet"),
-        (r"\b(arquitectura|design|dise[ñn]a|sistema|estrategia|migraci[oó]n)\b", "opus"),
+        (r"\b(arquitectura|architecture|design|dise[ñn]a|sistema|system|estrategia|strategy|migraci[oó]n|migration)\b", "opus"),
     ]
     DEFAULT_ALIAS = "sonnet"
 
@@ -222,7 +222,7 @@ class SemanticCache:
 
     def __init__(self, max_size: int = 10_000):
         if max_size <= 0:
-            raise ValueError("max_size debe ser positivo")
+            raise ValueError("max_size must be positive")
         self.max_size = max_size
         self._cache: "OrderedDict[str, str]" = OrderedDict()
         self._lock = threading.Lock()

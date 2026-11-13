@@ -1,18 +1,18 @@
 # ============================================================
-# logger.py — Logger estructurado para sistemas agénticos
+# logger.py: structured logger for agentic systems
 # ============================================================
-# Versión: 1.0.0
-# Autor: Sergio Perez Ruiz
+# Version: 1.0.0
+# Author: Sergio Perez Ruiz
 # ============================================================
 """
-Logger estructurado para sistemas agénticos de producción.
+Structured logger for production agentic systems.
 
-Características:
-- JSON Lines para ingestión fácil (ELK, Datadog, Splunk)
-- Correlation ID automático o proporcionado
-- Sanitización automática de datos sensibles
-- Métricas agregadas por sesión
-- Niveles de log configurables
+Features:
+- JSON Lines for easy ingestion (ELK, Datadog, Splunk)
+- Automatic or caller-supplied correlation ID
+- Automatic redaction of sensitive data
+- Per-session aggregated metrics
+- Configurable log levels
 """
 
 from __future__ import annotations
@@ -28,78 +28,78 @@ from enum import Enum
 
 
 class EventType(Enum):
-    """Tipos de eventos estándar para logs agénticos."""
+    """Standard event types for agentic logs."""
 
-    # Ciclo de vida
+    # Lifecycle
     AGENT_START = "agent_start"
     AGENT_FINISH = "agent_finish"
     AGENT_ERROR = "agent_error"
 
-    # Razonamiento
+    # Reasoning
     REASONING_STEP = "reasoning_step"
     DECISION = "decision"
 
-    # Herramientas
+    # Tools
     TOOL_INVOKED = "tool_invoked"
     TOOL_RESULT = "tool_result"
     TOOL_ERROR = "tool_error"
 
-    # Contexto
+    # Context
     CONTEXT_INJECTED = "context_injected"
     RAG_QUERY = "rag_query"
 
-    # Seguridad
+    # Security
     INPUT_SANITIZED = "input_sanitized"
     PROMPT_INJECTION_DETECTED = "prompt_injection_detected"
     HUMAN_APPROVAL_REQUESTED = "human_approval_requested"
     HUMAN_APPROVAL_RESULT = "human_approval_result"
 
-    # Métricas
+    # Metrics
     METRICS_SNAPSHOT = "metrics_snapshot"
     BUDGET_CHECK = "budget_check"
 
 
 @dataclass
 class StructuredLogEntry:
-    """Entrada de log estructurada para sistemas agénticos."""
+    """Structured log entry for agentic systems."""
 
-    # Obligatorios
+    # Required
     timestamp: str
     level: str
     correlation_id: str
     event_type: str
     agent_id: str
 
-    # Opcionales
+    # Optional
     session_id: Optional[str] = None
     team_id: Optional[str] = None
     user_id: Optional[str] = None
     agent_version: Optional[str] = None
     model_used: Optional[str] = None
 
-    # Métricas
+    # Metrics
     latency_ms: Optional[float] = None
     cost_usd: Optional[float] = None
     retry_count: Optional[int] = 0
 
-    # Payload y enlaces
+    # Payload and links
     payload: Dict[str, Any] = field(default_factory=dict)
     parent_correlation_id: Optional[str] = None
 
     def to_json(self) -> str:
-        """Serializa a JSON para logs."""
+        """Serialize to JSON for the logs."""
         return json.dumps(asdict(self), default=str)
 
 
 class StructuredAgentLogger:
-    """Logger estructurado para sistemas agénticos de producción.
+    """Structured logger for production agentic systems.
 
-    `sink`, si se proporciona, recibe cada entrada como `dict` (vía
-    `dataclasses.asdict`) además de emitirse como antes a `output_stream`
-    y al logger nativo. Es el punto de extensión pensado para conectar
-    este logger a un sumidero de observabilidad propio (una base de
-    datos, un colector OpenTelemetry, el `TraceStore` de `sintetico_api`,
-    etc.) sin acoplar esta clase a ningún backend concreto.
+    `sink`, if given, receives every entry as a `dict` (via
+    `dataclasses.asdict`) in addition to the usual output to `output_stream`
+    and the native logger. It is the extension point for connecting this
+    logger to your own observability sink (a database, an OpenTelemetry
+    collector, the `TraceStore` of `sintetico_api`, and so on) without
+    coupling this class to any particular backend.
     """
 
     def __init__(
@@ -122,19 +122,18 @@ class StructuredAgentLogger:
         self.enable_sanitization = enable_sanitization
         self.sink = sink
 
-        # Configurar logging nativo
+        # Configure native logging
         self._setup_native_logging()
 
-        # Métricas por sesión
+        # Per-session metrics
         self._session_metrics = {}
 
-        # Claves consideradas sensibles por nombre exacto (tras normalizar a
-        # minúsculas) o por sufijo. La implementación original marcaba como
-        # sensible cualquier clave que *contuviese* "token" en cualquier
-        # posición, lo que enmascaraba silenciosamente métricas legítimas
-        # como `input_tokens`, `output_tokens` o `total_tokens` (contienen
-        # "token" como substring, pero no son un secreto): rompía la propia
-        # observabilidad que este logger existe para dar.
+        # Keys treated as sensitive by exact name (after lower-casing) or by
+        # suffix. The original implementation flagged any key that *contained*
+        # "token" anywhere, which silently masked legitimate metrics such as
+        # `input_tokens`, `output_tokens`, or `total_tokens` (they contain
+        # "token" as a substring but are not secrets), breaking the very
+        # observability this logger exists to provide.
         self._sensitive_exact_keys = {
             "api_key",
             "password",
@@ -156,9 +155,8 @@ class StructuredAgentLogger:
             "_ssn",
             "_auth",
         )
-        # Métricas de negocio conocidas que jamás deben enmascararse, como
-        # defensa en profundidad adicional a la coincidencia por palabra
-        # completa/sufijo de arriba.
+        # Known business metrics that must never be masked, as defense in
+        # depth on top of the whole-word/suffix matching above.
         self._metric_key_allowlist = {
             "input_tokens",
             "output_tokens",
@@ -172,14 +170,14 @@ class StructuredAgentLogger:
         }
 
     def _setup_native_logging(self):
-        """Configura logging nativo para compatibilidad.
+        """Configure native logging for compatibility.
 
-        `logging.getLogger(name)` devuelve siempre la misma instancia para
-        un mismo nombre: si se crean varias `StructuredAgentLogger` con el
-        mismo `agent_id` (habitual en tests o en workers que se
-        reinstancian), añadir un handler nuevo cada vez duplicaría cada
-        línea de log. Se limpian los handlers propios antes de añadir el
-        nuevo para mantener la operación idempotente.
+        `logging.getLogger(name)` always returns the same instance for the
+        same name: if several `StructuredAgentLogger`s are created with the
+        same `agent_id` (common in tests or in workers that get re-created),
+        adding a new handler each time would duplicate every log line. Our own
+        handlers are removed before adding the new one, so the operation is
+        idempotent.
         """
         self._native_logger = logging.getLogger(f"agent.{self.agent_id}")
         self._native_logger.setLevel(getattr(logging, self.log_level, logging.INFO))
@@ -188,8 +186,8 @@ class StructuredAgentLogger:
                 self._native_logger.removeHandler(existing)
 
         if self.output is None:
-            # Sin stream de salida (p. ej. uso como librería con `sink`):
-            # no volcar nada a stderr por defecto.
+            # No output stream (e.g. used as a library with a `sink`):
+            # don't write anything to stderr by default.
             handler = logging.NullHandler()
         else:
             handler = logging.StreamHandler(self.output)
@@ -213,7 +211,7 @@ class StructuredAgentLogger:
         return key_lower.endswith(self._sensitive_key_suffixes)
 
     def _sanitize(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sanitiza datos sensibles recursivamente."""
+        """Recursively redact sensitive data."""
         if not self.enable_sanitization:
             return data
 
@@ -248,7 +246,7 @@ class StructuredAgentLogger:
         retry_count: Optional[int] = None,
         parent_correlation_id: Optional[str] = None,
     ) -> StructuredLogEntry:
-        """Crea una entrada de log estructurada."""
+        """Create a structured log entry."""
         if payload:
             payload = self._sanitize(payload)
 
@@ -271,8 +269,8 @@ class StructuredAgentLogger:
         )
 
     def _emit(self, entry: StructuredLogEntry):
-        """Emite la entrada de log al stream configurado, al logger nativo
-        y, si existe, al `sink` registrado."""
+        """Emit the log entry to the configured stream, the native logger,
+        and the registered `sink`, if any."""
         if not self._should_log(entry.level):
             return
 
@@ -287,7 +285,7 @@ class StructuredAgentLogger:
             self.sink(asdict(entry))
 
     # ============================================
-    # MÉTODOS DE LOG POR EVENTO
+    # LOG METHODS PER EVENT
     # ============================================
 
     def start_session(
@@ -298,7 +296,7 @@ class StructuredAgentLogger:
         task_complexity: str = "moderate",
         metadata: Optional[Dict[str, Any]] = None,
     ):
-        """Inicia una nueva sesión de agente."""
+        """Start a new agent session."""
         self._session_metrics[correlation_id] = {
             "start_time": time.time(),
             "step_count": 0,
@@ -315,7 +313,7 @@ class StructuredAgentLogger:
             event_type=EventType.AGENT_START.value,
             message="Agent session started",
             payload={
-                "message": f"Sesión iniciada para usuario {user_id}",
+                "message": f"Session started for user {user_id}",
                 "task_complexity": task_complexity,
                 "metadata": metadata or {},
             },
@@ -333,7 +331,7 @@ class StructuredAgentLogger:
         tool_args: Optional[Dict[str, Any]] = None,
         confidence: Optional[float] = None,
     ):
-        """Registra un paso de razonamiento."""
+        """Record a reasoning step."""
         if correlation_id in self._session_metrics:
             self._session_metrics[correlation_id]["step_count"] += 1
             if tool_invoked:
@@ -343,7 +341,7 @@ class StructuredAgentLogger:
             level="INFO",
             correlation_id=correlation_id,
             event_type=EventType.REASONING_STEP.value,
-            message=f"Paso de razonamiento {step_number}",
+            message=f"Reasoning step {step_number}",
             payload={
                 "step_number": step_number,
                 "thought": thought,
@@ -361,12 +359,12 @@ class StructuredAgentLogger:
         tool_args: Dict[str, Any],
         permission_level: str = "read",
     ):
-        """Registra invocación de herramienta."""
+        """Record a tool invocation."""
         entry = self._create_entry(
             level="INFO",
             correlation_id=correlation_id,
             event_type=EventType.TOOL_INVOKED.value,
-            message=f"Herramienta invocada: {tool_name}",
+            message=f"Tool invoked: {tool_name}",
             payload={
                 "tool_name": tool_name,
                 "tool_args": tool_args,
@@ -386,9 +384,9 @@ class StructuredAgentLogger:
         cost_usd: Optional[float] = None,
         model_used: Optional[str] = None,
     ):
-        """Registra resultado de herramienta (o de una llamada a un LLM,
-        modelada como una tool más: pasar `cost_usd`/`model_used` en ese caso
-        permite atribuir coste por modelo en agregaciones posteriores)."""
+        """Record a tool result (or an LLM call, modelled as one more tool:
+        passing `cost_usd`/`model_used` in that case lets later aggregations
+        attribute cost per model)."""
         if correlation_id in self._session_metrics:
             if not success:
                 self._session_metrics[correlation_id]["errors"] += 1
@@ -399,7 +397,7 @@ class StructuredAgentLogger:
             level="INFO" if success else "ERROR",
             correlation_id=correlation_id,
             event_type=EventType.TOOL_RESULT.value,
-            message=f"Resultado de herramienta {tool_name}: {'OK' if success else 'FAIL'}",
+            message=f"Tool result {tool_name}: {'OK' if success else 'FAIL'}",
             payload={
                 "tool_name": tool_name,
                 "success": success,
@@ -423,12 +421,12 @@ class StructuredAgentLogger:
         human_approval_required: bool = False,
         cost_usd: Optional[float] = None,
     ):
-        """Registra una decisión del agente."""
+        """Record an agent decision."""
         entry = self._create_entry(
             level="INFO",
             correlation_id=correlation_id,
             event_type=EventType.DECISION.value,
-            message=f"Decisión: {decision}",
+            message=f"Decision: {decision}",
             payload={
                 "decision": decision,
                 "rationale": rationale,
@@ -449,12 +447,12 @@ class StructuredAgentLogger:
         context: Optional[Dict[str, Any]] = None,
         severity: str = "ERROR",
     ):
-        """Registra un error del agente."""
+        """Record an agent error."""
         entry = self._create_entry(
             level=severity,
             correlation_id=correlation_id,
             event_type=EventType.AGENT_ERROR.value,
-            message=f"Error en agente: {error_type}",
+            message=f"Agent error: {error_type}",
             payload={
                 "error_type": error_type,
                 "error_message": error_message,
@@ -475,7 +473,7 @@ class StructuredAgentLogger:
         latency_ms: Optional[float] = None,
         retry_count: int = 0,
     ):
-        """Finaliza una sesión de agente con métricas."""
+        """Finish an agent session with its metrics."""
         metrics = self._session_metrics.get(correlation_id, {})
 
         entry = self._create_entry(
@@ -514,16 +512,16 @@ class StructuredAgentLogger:
         details: Dict[str, Any],
         severity: str = "WARNING",
     ):
-        """Registra eventos de seguridad."""
+        """Record security events."""
         entry = self._create_entry(
             level=severity,
             correlation_id=correlation_id,
             event_type=event_type,
-            message=f"Evento de seguridad: {event_type}",
+            message=f"Security event: {event_type}",
             payload={"security_event_type": event_type, "details": details},
         )
         self._emit(entry)
 
     def get_session_metrics(self, correlation_id: str) -> Dict[str, Any]:
-        """Recupera métricas de una sesión."""
+        """Return the metrics of a session."""
         return self._session_metrics.get(correlation_id, {})

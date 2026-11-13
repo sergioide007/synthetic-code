@@ -1,17 +1,17 @@
 # ============================================================
-# agent.py — Agente ReAct con trazabilidad integrada
+# agent.py: ReAct agent with built-in traceability
 # ============================================================
-# Versión: 1.0.0
-# Autor: Sergio Perez Ruiz
+# Version: 1.0.0
+# Author: Sergio Perez Ruiz
 # ============================================================
 """
-Agente ReAct con logging estructurado integrado.
+ReAct agent with built-in structured logging.
 
-Implementa el patrón ReAct (Reasoning + Acting) con:
-- Trazabilidad completa mediante correlation_id
-- Logs estructurados en JSON
-- Métricas de costo y latencia
-- Sanitización automática de datos sensibles
+Implements the ReAct pattern (Reasoning + Acting) with:
+- Full traceability through a correlation_id
+- Structured JSON logs
+- Cost and latency metrics
+- Automatic redaction of sensitive data
 """
 
 import json
@@ -26,7 +26,7 @@ from .logger import StructuredAgentLogger
 
 
 class ReActAgentWithLogging:
-    """Agente ReAct con logging estructurado integrado."""
+    """ReAct agent with built-in structured logging."""
 
     def __init__(
         self,
@@ -42,23 +42,23 @@ class ReActAgentWithLogging:
         self.max_cycles = max_cycles
         self.cost_per_token = cost_per_token
 
-        self.system_prompt = """Eres un agente que resuelve problemas usando el patrón ReAct (Thought, Action, Action Input, Observation).
-Tienes acceso a estas herramientas:
+        self.system_prompt = """You are an agent that solves problems with the ReAct pattern (Thought, Action, Action Input, Observation).
+You have access to these tools:
 {tools_dev}
 
-Debes responder siempre con este formato exacto:
-Thought: [Tu razonamiento actual]
-Action: [Nombre de la herramienta o 'None' si terminaste]
-Action Input: [JSON con argumentos para la herramienta]
+Always answer in exactly this format:
+Thought: [your current reasoning]
+Action: [the tool name, or 'None' when you are done]
+Action Input: [JSON with the tool's arguments]
 
-Si terminaste y tienes la respuesta final, escribe:
-Thought: Ya tengo la respuesta final.
+When you are done and have the final answer, write:
+Thought: I have the final answer.
 Action: None
 Action Input: {{result}}
 """
 
     def _parse_thought(self, text: str) -> tuple:
-        """Parsea la respuesta del LLM en Thought, Action, Action Input."""
+        """Parse the LLM answer into Thought, Action, and Action Input."""
         thought_match = re.search(r"Thought:\s*(.*?)(?=Action:|$)", text, re.DOTALL)
         action_match = re.search(r"Action:\s*(.*)", text)
         input_match = re.search(r"Action Input:\s*(.*)", text)
@@ -83,16 +83,16 @@ Action Input: {{result}}
         user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Ejecuta el agente con trazabilidad completa.
+        Run the agent with full traceability.
 
         Args:
-            user_query: Consulta del usuario
-            correlation_id: ID para rastrear la tarea (se genera automáticamente si no se proporciona)
-            session_id: ID de sesión del usuario
-            user_id: ID del usuario (anonimizado)
+            user_query: the user's query
+            correlation_id: ID that tracks the task (generated automatically if not given)
+            session_id: the user's session ID
+            user_id: the user's ID (anonymized)
 
         Returns:
-            Dict con resultado, métricas y logs
+            Dict with the result, metrics, and logs
         """
         if correlation_id is None:
             correlation_id = f"task-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
@@ -103,7 +103,7 @@ Action Input: {{result}}
         retry_count = 0
         step_number = 0
 
-        # Iniciar sesión
+        # Start the session
         self.logger.start_session(
             correlation_id=correlation_id,
             session_id=session_id or f"sess_{uuid.uuid4().hex[:12]}",
@@ -113,16 +113,16 @@ Action Input: {{result}}
         )
 
         try:
-            # Configurar contexto
+            # Build the context
             tools_description = "\n".join(
-                [f"- {name}: {fn.__doc__ or 'Sin descripción'}" for name, fn in self.tools.items()]
+                [f"- {name}: {fn.__doc__ or 'No description'}" for name, fn in self.tools.items()]
             )
             context = self.system_prompt.format(tools_dev=tools_description)
             context += f"\nUser Query: {user_query}\n"
 
-            # Ejecutar ciclo ReAct
+            # Run the ReAct cycle
             for cycle in range(self.max_cycles):
-                # Llamada al LLM
+                # Call the LLM
                 llm_response = self.llm_call(context, {"max_tokens": 1024, "temperature": 0.0})
                 response_text = llm_response.get("content", "")
                 tokens_used = llm_response.get("tokens", 300)
@@ -132,7 +132,7 @@ Action Input: {{result}}
                 thought, action, action_input = self._parse_thought(response_text)
                 step_number += 1
 
-                # Logear paso de razonamiento
+                # Log the reasoning step
                 self.logger.reasoning_step(
                     correlation_id=correlation_id,
                     step_number=step_number,
@@ -142,9 +142,9 @@ Action Input: {{result}}
                     confidence=0.8,
                 )
 
-                # Si es acción final
+                # Final action
                 if action is None or action.lower() == "none":
-                    result = action_input.get("result", "Proceso completado sin resultado explícito.")
+                    result = action_input.get("result", "Process completed without an explicit result.")
 
                     self.logger.decision(
                         correlation_id=correlation_id,
@@ -158,7 +158,7 @@ Action Input: {{result}}
                     self.logger.finish_session(
                         correlation_id=correlation_id,
                         status="success",
-                        message="Tarea completada exitosamente",
+                        message="Task completed successfully",
                         tokens_input=total_tokens,
                         tokens_output=0,
                         cost_usd=total_cost,
@@ -176,7 +176,7 @@ Action Input: {{result}}
                         "tokens": total_tokens,
                     }
 
-                # Ejecutar herramienta
+                # Run the tool
                 if action in self.tools:
                     self.logger.tool_invocation(
                         correlation_id=correlation_id,
@@ -206,7 +206,7 @@ Action Input: {{result}}
 
                     context += f"\nObservation: {observation}\n"
                 else:
-                    observation = f"Error: La herramienta '{action}' no existe"
+                    observation = f"Error: the tool '{action}' does not exist"
                     retry_count += 1
                     self.logger.tool_result(
                         correlation_id=correlation_id,
@@ -218,11 +218,11 @@ Action Input: {{result}}
                     )
                     context += f"\nObservation: {observation}\n"
 
-            # Si se alcanza el máximo de ciclos
+            # Maximum number of cycles reached
             self.logger.finish_session(
                 correlation_id=correlation_id,
                 status="error",
-                message="Máximo de ciclos alcanzado sin resolución",
+                message="Maximum cycles reached without a resolution",
                 tokens_input=total_tokens,
                 tokens_output=0,
                 cost_usd=total_cost,
@@ -232,7 +232,7 @@ Action Input: {{result}}
 
             return {
                 "status": "error",
-                "result": "Máximo de ciclos alcanzado",
+                "result": "Maximum cycles reached",
                 "correlation_id": correlation_id,
                 "cost_usd": total_cost,
                 "latency_ms": (time.time() - start_time) * 1000,
@@ -241,7 +241,7 @@ Action Input: {{result}}
             }
 
         except Exception as e:
-            # Error inesperado
+            # Unexpected error
             self.logger.error(
                 correlation_id=correlation_id,
                 error_type="unexpected_error",
@@ -254,7 +254,7 @@ Action Input: {{result}}
             self.logger.finish_session(
                 correlation_id=correlation_id,
                 status="error",
-                message=f"Error inesperado: {str(e)}",
+                message=f"Unexpected error: {str(e)}",
                 tokens_input=total_tokens,
                 tokens_output=0,
                 cost_usd=total_cost,

@@ -92,7 +92,7 @@ class TestAsyncAIGateway:
             task_id = gateway.submit_task("test_task", {"x": 1})
             task = gateway.wait_for_result(task_id, timeout=2)
             assert task.status == TaskStatus.COMPLETED
-            assert task.result == "Resultado de test_task"
+            assert task.result == "Result of test_task"
         finally:
             gateway.shutdown()
 

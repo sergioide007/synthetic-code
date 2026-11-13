@@ -1,29 +1,26 @@
 """
-sintetico_api.postgres_store — Backend de trazas sobre PostgreSQL, para
-despliegues con más de una instancia del servicio.
+sintetico_api.postgres_store: trace backend on PostgreSQL, for deployments
+with more than one service instance.
 
-Implementa exactamente el mismo contrato que
-`sintetico_api.store.TraceStore` (ver `BaseTraceStore`), así que
-`sintetico_api.deps.get_store()` puede devolver uno u otro sin que
-routers ni servicios lo noten.
+It implements exactly the same contract as `sintetico_api.store.TraceStore`
+(see `BaseTraceStore`), so `sintetico_api.deps.get_store()` can return either
+one without routers or services noticing.
 
-## Live-tail multi-instancia
+## Multi-instance live tail
 
-El pub-sub en memoria de `TraceStore` sólo entrega eventos a los
-suscriptores conectados a *ese mismo proceso*. Con varias instancias
-detrás de un balanceador, un cliente SSE conectado a la instancia B
-nunca vería un evento insertado por la instancia A.
+`TraceStore`'s in-memory pub-sub only delivers events to subscribers connected
+to *that same process*. With several instances behind a load balancer, an SSE
+client connected to instance B would never see an event inserted by instance A.
 
-`PostgresTraceStore` resuelve esto con el mecanismo nativo `LISTEN`/
-`NOTIFY` de Postgres: cada instancia mantiene una conexión dedicada en
-modo `LISTEN sintetico_events`, y `insert_event()` hace
-`NOTIFY sintetico_events, '<id del evento>'` tras cada inserción (sólo
-el id, nunca el payload completo: `NOTIFY` tiene un límite de 8000 bytes
-por mensaje en Postgres, y el id es suficiente para que el hilo oyente
-recupere la fila completa con un `SELECT`). Así, un evento insertado en
-cualquier instancia llega a los suscriptores locales de todas las demás.
+`PostgresTraceStore` solves this with Postgres's native `LISTEN`/`NOTIFY`:
+each instance keeps a dedicated connection in `LISTEN sintetico_events` mode,
+and `insert_event()` runs `NOTIFY sintetico_events, '<event id>'` after every
+insert (only the id, never the full payload: `NOTIFY` messages are limited to
+8000 bytes in Postgres, and the id is enough for the listener thread to fetch
+the full row with a `SELECT`). That way an event inserted on any instance
+reaches the local subscribers of all the others.
 
-Requiere `psycopg2` (`pip install -e ".[postgres]"`).
+Requires `psycopg2` (`pip install -e ".[postgres]"`).
 """
 
 from __future__ import annotations
@@ -86,9 +83,9 @@ def new_id(prefix: str) -> str:
 
 
 class PostgresTraceStore(BaseTraceStore):
-    """Backend de trazas sobre Postgres con live-tail multi-instancia.
+    """Postgres trace backend with a multi-instance live tail.
 
-    Uso:
+    Usage:
 
         store = PostgresTraceStore("postgresql://user:pass@host:5432/sintetico")
     """
@@ -117,29 +114,28 @@ class PostgresTraceStore(BaseTraceStore):
         self._listener_thread = threading.Thread(target=self._listen_loop, name="sintetico-pg-listener", daemon=True)
         self._listener_thread.start()
 
-        # Sin esta espera hay una condición de carrera real de arranque: si
-        # `insert_event()` se llama inmediatamente después de construir el
-        # store (p. ej. un health-check que dispara una demo nada más
-        # arrancar), el NOTIFY podría emitirse antes de que el hilo oyente
-        # haya ejecutado `LISTEN` en Postgres, y ese primer evento nunca
-        # llegaría al live-tail. Se espera (con timeout) a que el hilo
-        # confirme que ya está escuchando; si no lo confirma a tiempo, se
-        # continúa igualmente (el resto de la API sigue funcionando) pero
-        # se registra un aviso explícito.
+        # Without this wait there is a real start-up race: if `insert_event()`
+        # is called right after the store is built (e.g. a health check that
+        # triggers a demo at boot), the NOTIFY could be sent before the
+        # listener thread has run `LISTEN` in Postgres, and that first event
+        # would never reach the live tail. We wait (with a timeout) for the
+        # thread to confirm it is listening; if it doesn't confirm in time we
+        # carry on anyway (the rest of the API still works) but log an
+        # explicit warning.
         if not self._listening_ready.wait(timeout=5):
             logger.warning(
-                "El listener de Postgres LISTEN/NOTIFY no confirmó estar activo tras 5s; "
-                "el live-tail podría perder eventos hasta que se recupere."
+                "The Postgres LISTEN/NOTIFY listener did not confirm it was active after 5s; "
+                "the live tail may miss events until it recovers."
             )
 
-    # ─── Helpers de conexión ────────────────────────────────────────
+    # ─── Connection helpers ────────────────────────────────────────
     def _cursor(self, commit: bool = False):
         return _PooledCursor(self._pool, self._extras, commit=commit)
 
     def _listen_loop(self) -> None:
-        """Hilo dedicado: escucha NOTIFY y republica en los suscriptores
-        locales de este proceso. Una conexión de LISTEN debe mantenerse
-        abierta indefinidamente, por eso no se toma del pool compartido."""
+        """Dedicated thread: listen for NOTIFY and republish to this process's
+        local subscribers. A LISTEN connection must stay open indefinitely, so
+        it is not taken from the shared pool."""
         conn = None
         try:
             conn = self._psycopg2.connect(self.dsn)
@@ -157,7 +153,7 @@ class PostgresTraceStore(BaseTraceStore):
                     notify = conn.notifies.pop(0)
                     self._handle_notify(notify.payload)
         except Exception:  # noqa: BLE001
-            logger.exception("Listener de Postgres LISTEN/NOTIFY terminó con error")
+            logger.exception("Postgres LISTEN/NOTIFY listener stopped with an error")
         finally:
             if conn is not None:
                 conn.close()
@@ -173,7 +169,7 @@ class PostgresTraceStore(BaseTraceStore):
         if row:
             self._publish(_row_to_event_dict(row))
 
-    # ─── Eventos ────────────────────────────────────────────────────
+    # ─── Events ────────────────────────────────────────────────────
     def insert_event(self, entry: Dict[str, Any], run_id: Optional[str] = None, pillar: Optional[str] = None) -> int:
         payload = entry.get("payload", {}) or {}
         timestamp = entry.get("timestamp") or datetime.now(timezone.utc).isoformat()
@@ -206,9 +202,9 @@ class PostgresTraceStore(BaseTraceStore):
                 },
             )
             event_id = cur.fetchone()["id"]
-            # Sólo el id: el payload completo podría superar el límite de
-            # 8000 bytes de un mensaje NOTIFY. El listener recupera la
-            # fila completa con un SELECT (ver `_handle_notify`).
+            # Only the id: the full payload could exceed the 8000-byte limit
+            # of a NOTIFY message. The listener fetches the full row with a
+            # SELECT (see `_handle_notify`).
             cur.execute("SELECT pg_notify(%s, %s)", (_NOTIFY_CHANNEL, str(event_id)))
 
         return event_id
@@ -251,7 +247,7 @@ class PostgresTraceStore(BaseTraceStore):
         rows.reverse()
         return rows
 
-    # ─── Ejecuciones (runs) ─────────────────────────────────────────
+    # ─── Runs ─────────────────────────────────────────
     def create_run(self, pillar: str, team_id: str = "demo") -> str:
         run_id = new_id(pillar)
         with self._cursor(commit=True) as cur:
@@ -286,7 +282,7 @@ class PostgresTraceStore(BaseTraceStore):
                 cur.execute("SELECT * FROM sintetico_runs ORDER BY started_at DESC LIMIT %s", (limit,))
             return [_row_to_run_dict(r) for r in cur.fetchall()]
 
-    # ─── Métricas agregadas ─────────────────────────────────────────
+    # ─── Aggregated metrics ─────────────────────────────────────────
     def metrics_summary(self, window_minutes: int = 60) -> Dict[str, Any]:
         with self._cursor() as cur:
             cur.execute(
@@ -329,7 +325,7 @@ class PostgresTraceStore(BaseTraceStore):
             "runs_by_status": runs_by_status,
         }
 
-    # ─── Live tail (pub-sub sobre LISTEN/NOTIFY) ────────────────────
+    # ─── Live tail (pub-sub over LISTEN/NOTIFY) ─────────────────────
     def subscribe(self) -> "queue.Queue[Dict[str, Any]]":
         q: "queue.Queue[Dict[str, Any]]" = queue.Queue(maxsize=1000)
         with self._subscribers_lock:
@@ -357,9 +353,9 @@ class PostgresTraceStore(BaseTraceStore):
 
 
 class _PooledCursor:
-    """Context manager que toma una conexión del pool, expone un cursor
-    con resultados como dict, hace commit/rollback según corresponda, y
-    siempre devuelve la conexión al pool."""
+    """Context manager that takes a connection from the pool, exposes a cursor
+    returning dict rows, commits or rolls back as appropriate, and always
+    returns the connection to the pool."""
 
     def __init__(self, pool, extras_module, commit: bool = False):
         self._pool = pool

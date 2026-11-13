@@ -1,8 +1,8 @@
 """
-sintetico_api.main — Punto de entrada de la API + dashboard de
-observabilidad de "Código Sintético".
+sintetico_api.main: entry point of the "Synthetic Code" observability API
+and dashboard.
 
-Arranque local:
+Run it locally:
 
     pip install -e ".[api]"
     uvicorn sintetico_api.main:app --reload
@@ -32,50 +32,49 @@ from .routers import agent, metrics, runs, traces
 _STATIC_DIR = Path(__file__).parent / "static"
 
 DESCRIPTION = """
-API de observabilidad para los patrones de **Código Sintético**: dispara
-ejecuciones instrumentadas de cada uno de los 4 pilares del libro
-(orquestación eficiente, calidad autónoma en CI/CD, código autolimpiable
-y arquitectura resiliente), invoca un agente ReAct en vivo, y consulta
-sus trazas y métricas — el mismo tipo de API que alimentaría un panel
-estilo Datadog/CloudWatch para un sistema multiagente en producción.
+Observability API for the **Synthetic Code** patterns: it triggers
+instrumented runs of each of the book's four pillars (efficient
+orchestration, autonomous quality in CI/CD, self-cleaning code, and
+resilient architecture), invokes a live ReAct agent, and queries their
+traces and metrics. It is the same kind of API that would feed a
+Datadog/CloudWatch-style panel for a multi-agent system in production.
 
-### Conceptos clave
+### Key concepts
 
-- **Run**: una ejecución de un pilar o del agente ReAct. Agrupa una o
-  varias trazas y produce un resumen de negocio (`summary`).
-- **Trace / correlation_id**: la secuencia ordenada de eventos
+- **Run**: one execution of a pillar or of the ReAct agent. It groups one
+  or more traces and produces a business summary (`summary`).
+- **Trace / correlation_id**: the ordered sequence of events
   (`agent_start`, `reasoning_step`, `tool_result`, `decision`,
-  `security_event`, `agent_finish`, ...) de una ejecución del agente. Es
-  la "waterfall" que se visualiza en el dashboard.
-- **Live tail**: `/api/v1/traces/stream` emite cada evento nuevo en
-  tiempo real vía Server-Sent Events.
+  `security_event`, `agent_finish`, ...) of one agent execution. It is the
+  "waterfall" shown in the dashboard.
+- **Live tail**: `/api/v1/traces/stream` emits every new event in real
+  time through Server-Sent Events.
 
-Sin ninguna API key configurada en el servidor, todos los endpoints
-funcionan igualmente con proveedores simulados (`MockProvider` / un
-simulador ReAct determinista): la demo es 100% funcional sin coste. Con
-`ANTHROPIC_API_KEY`/`OPENAI_API_KEY` configuradas, `/api/v1/agent/invoke`
-usa un modelo real.
+With no API key configured on the server, every endpoint still works with
+simulated providers (`MockProvider` and a deterministic ReAct simulator):
+the demo is fully functional at no cost. With `ANTHROPIC_API_KEY` or
+`OPENAI_API_KEY` set, `/api/v1/agent/invoke` uses a real model.
 
-### Autenticación
+### Authentication
 
-Por defecto esta API **no exige autenticación** (modo demo local). Si el
-servidor tiene configurada la variable de entorno `SINTETICO_API_KEY`,
-todos los endpoints bajo `/api/v1/` (excepto `/api/v1/health`) exigen la
-cabecera `X-API-Key` con ese valor. Usa el botón **Authorize** de esta
-misma página de Swagger para probarlo.
+By default this API **requires no authentication** (local demo mode). If
+the server has the `SINTETICO_API_KEY` environment variable set, every
+endpoint under `/api/v1/` (except `/api/v1/health`) requires the
+`X-API-Key` header with that value. Use the **Authorize** button on this
+Swagger page to try it.
 """
 
 app = FastAPI(
-    title="Código Sintético — Agent Observability API",
+    title="Synthetic Code: Agent Observability API",
     description=DESCRIPTION,
     version=sintetico.__version__,
-    contact={"name": "Código Sintético"},
+    contact={"name": "Synthetic Code"},
     license_info={"name": "MIT"},
     openapi_tags=[
-        {"name": "Pilares del libro", "description": "Ejecuta y consulta los 4 pilares de arquitectura del libro."},
-        {"name": "Agente ReAct", "description": "Invoca en vivo un agente con trazabilidad completa."},
-        {"name": "Trazas", "description": "Consulta histórica y live-tail (SSE) de eventos de traza."},
-        {"name": "Métricas", "description": "KPIs agregados para dashboards de observabilidad."},
+        {"name": "Book pillars", "description": "Run and query the book's four architecture pillars."},
+        {"name": "ReAct agent", "description": "Invoke a live agent with full traceability."},
+        {"name": "Traces", "description": "Historical queries and live tail (SSE) of trace events."},
+        {"name": "Metrics", "description": "Aggregated KPIs for observability dashboards."},
     ],
 )
 
@@ -92,7 +91,7 @@ app.include_router(agent.router)
 app.include_router(metrics.router)
 
 
-@app.get("/api/v1/health", response_model=HealthOut, tags=["Salud"], summary="Estado del servicio")
+@app.get("/api/v1/health", response_model=HealthOut, tags=["Health"], summary="Service status")
 def health() -> HealthOut:
     providers = []
     if os.environ.get("ANTHROPIC_API_KEY"):

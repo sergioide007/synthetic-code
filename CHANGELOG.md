@@ -1,11 +1,29 @@
 # Changelog
 
-## Unreleased
+## 2.2.2 (2026-11-12)
+### Fixed
+- `EmergencyOverrideGateway`: separation of duties. The person who requests an override can no longer approve it
+  (case- and whitespace-insensitive), an approver must be named, and a request must name its requestor. A refused
+  approval leaves the request pending for someone else.
+- `sintetico gate` now reads the output of `sintetico eval` directly: it accepts `critical_failures` as well as
+  `critical_bugs` (the larger count wins), so `eval > results.json && gate --results results.json` no longer loses
+  a critical failure on the way.
+### Changed
+- Every user-facing string in `sintetico`, `sintetico_api` and `trazabilidad` is now English: exceptions, log
+  messages, LLM prompts, the threat matrix, autonomy labels, OpenAPI tags and descriptions, and the dashboard. The
+  docstrings and comments of `sintetico_api` and `trazabilidad` were translated too (verified by comparing syntax
+  trees: only strings changed, apart from the fixes listed here).
+- Heuristics that read user or model text understand English and Spanish: `EscalationPolicy` default keywords
+  (cancel, lawsuit, lawyer, attorney, CEO, "talk to a human", plus the Spanish ones), `ModelRouter` rules
+  (architecture, system, strategy, migration, where), `SecurityScanner` patterns (English jailbreak role-play and
+  "repeat everything above"; finding type `exfiltracion_de_contexto` is now `context_exfiltration`), and the Tree of
+  Thoughts parser (`Option N:` or `Opción N:`).
+- `ShadowAgent` (adversarial) and `TreeOfThoughts` prompts now state the exact answer format their parsers expect.
+- CI tests Python 3.13 as well; workflow token restricted to read-only (`permissions: contents: read`).
 ### Added
+- `tests/test_i18n.py`: no Spanish user-facing strings, bilingual detection, and the prompt/parser contracts above.
 - Zenodo archive and DOI ([10.5281/zenodo.24161299](https://doi.org/10.5281/zenodo.24161299)): badge and "How to cite" in the READMEs, `doi`, `identifiers`, `abstract` and `keywords` in `CITATION.cff`.
 - `SECURITY.md` (private vulnerability reporting), `CONTRIBUTING.md`, Dependabot for pip and GitHub Actions, CodeQL workflow.
-### Changed
-- CI tests Python 3.13 as well; workflow token restricted to read-only (`permissions: contents: read`).
 
 ## 2.2.1 (2026-11-12)
 ### Changed

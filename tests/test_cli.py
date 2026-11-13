@@ -48,6 +48,25 @@ def test_eval_command_runs_user_agent(monkeypatch, capsys):
         cli.main(["eval", "--evalset", "sample_evalset.json", "--agent", "no_colon"])
 
 
+def test_eval_output_feeds_gate(monkeypatch, capsys, tmp_path):
+    """`eval > results.json && gate --results results.json`: the critical failure must survive the hand-off.
+    Regression: `gate` only read `critical_bugs`, while `eval` writes `critical_failures`."""
+    monkeypatch.chdir(FIX)
+    code, out = run(capsys, "eval", "--evalset", "sample_evalset.json", "--agent", "demo_agent:leaky")
+    assert code == 2
+    (tmp_path / "eval.json").write_text(json.dumps(out))
+    code, gate_out = run(capsys, "gate", "--results", str(tmp_path / "eval.json"))
+    assert code == 2 and gate_out["exit_code"] == 2
+    _, ok = run(capsys, "eval", "--evalset", "sample_evalset.json", "--agent", "demo_agent:answer")
+    (tmp_path / "ok.json").write_text(json.dumps(ok))
+    assert run(capsys, "gate", "--results", str(tmp_path / "ok.json"), "--min-trust", "0.5")[0] == 0
+
+
+def test_gate_takes_the_larger_critical_count(tmp_path, capsys):
+    both = results(tmp_path, critical_bugs=0, critical_failures=2)
+    assert run(capsys, "gate", "--results", both)[0] == 2
+
+
 def test_audit_verify(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("SINTETICO_AUDIT_KEY", "k")
     f = tmp_path / "a.jsonl"

@@ -30,7 +30,7 @@ def compute_tco(
 
 def calculate_roas(before_cost: float, after_cost: float, implementation_cost: float, months: int = 12) -> Dict:
     if implementation_cost < 0:
-        raise ValueError("implementation_cost no puede ser negativo")
+        raise ValueError("implementation_cost cannot be negative")
     monthly_savings = before_cost - after_cost
     annual_savings = monthly_savings * months
     roi = (

@@ -1,7 +1,6 @@
-// Código Sintético — Agent Observability dashboard
-// Vanilla JS, sin build step. Habla exclusivamente con la API HTTP
-// documentada en /docs — nada aquí es "falso": cada número viene de un
-// endpoint real.
+// Synthetic Code: Agent Observability dashboard
+// Vanilla JS, no build step. It talks only to the HTTP API documented at
+// /docs; nothing here is "fake": every number comes from a real endpoint.
 
 const API = "/api/v1";
 const API_KEY_STORAGE = "sintetico_api_key";
@@ -13,7 +12,7 @@ function setApiKey(value) {
   try {
     if (value) localStorage.setItem(API_KEY_STORAGE, value);
     else localStorage.removeItem(API_KEY_STORAGE);
-  } catch { /* localStorage no disponible: la sesión simplemente no persiste la key */ }
+  } catch { /* localStorage unavailable: the session simply does not keep the key */ }
 }
 
 const state = {
@@ -33,13 +32,13 @@ const EVENT_TYPE_COLOR = {
   emergency_override: "#FBBF24", swarm_halted: "#FB5D5D",
 };
 
-// ─── Utilidades ─────────────────────────────────────────────────────
+// ─── Utilities ─────────────────────────────────────────────────────
 function $(sel, root = document) { return root.querySelector(sel); }
 function $all(sel, root = document) { return [...root.querySelectorAll(sel)]; }
 function fmtUsd(n) { return `$${Number(n || 0).toFixed(6)}`; }
 function fmtMs(n) { return `${Math.round(Number(n || 0))} ms`; }
 function fmtTime(iso) {
-  try { return new Date(iso).toLocaleTimeString("es-ES", { hour12: false }); }
+  try { return new Date(iso).toLocaleTimeString(undefined, { hour12: false }); }
   catch { return iso || "—"; }
 }
 function shortId(id, n = 18) { return !id ? "—" : (id.length > n ? id.slice(0, n) + "…" : id); }
@@ -52,7 +51,7 @@ async function api(path, opts = {}) {
   const res = await fetch(`${API}${path}`, { ...opts, headers });
   if (res.status === 401) {
     openAuthModal();
-    throw new Error("Se requiere una API key válida (ver el candado en la esquina superior).");
+    throw new Error("A valid API key is required (see the padlock in the top corner).");
   }
   if (!res.ok) {
     let detail = res.statusText;
@@ -71,17 +70,17 @@ function toast(message, kind = "info") {
   setTimeout(() => el.remove(), 4200);
 }
 
-// ─── Autenticación (API key opcional) ────────────────────────────────
+// ─── Authentication (optional API key) ────────────────────────────────
 function refreshAuthButton(authEnabled) {
   const btn = $("#auth-btn");
   const label = $("#auth-btn-label");
   const hasKey = !!getApiKey();
   btn.classList.remove("is-locked", "is-unlocked");
   if (!authEnabled) {
-    label.textContent = "Sin auth";
+    label.textContent = "No auth";
   } else if (hasKey) {
     btn.classList.add("is-unlocked");
-    label.textContent = "Autenticado";
+    label.textContent = "Authenticated";
   } else {
     btn.classList.add("is-locked");
     label.textContent = "API key";
@@ -104,7 +103,7 @@ $("#auth-modal-backdrop").addEventListener("click", closeAuthModal);
 $("#auth-modal-save").addEventListener("click", () => {
   setApiKey($("#auth-modal-input").value.trim());
   closeAuthModal();
-  toast("API key guardada en este navegador", "success");
+  toast("API key saved in this browser", "success");
   loadHealth();
   refreshMetrics();
   loadRecentEvents();
@@ -112,16 +111,16 @@ $("#auth-modal-save").addEventListener("click", () => {
 $("#auth-modal-clear").addEventListener("click", () => {
   setApiKey("");
   $("#auth-modal-input").value = "";
-  toast("API key eliminada de este navegador", "info");
+  toast("API key removed from this browser", "info");
   refreshAuthButton($("#auth-btn").dataset.authEnabled === "true");
 });
 
-// ─── Navegación ─────────────────────────────────────────────────────
+// ─── Navigation ─────────────────────────────────────────────────────
 const VIEW_META = {
-  overview: ["Overview", "Estado agregado de los 4 pilares y del agente en vivo"],
-  traces: ["Trazas", "Live tail de eventos estructurados de todos los agentes"],
-  agent: ["Agente en vivo", "Invoca el agente ReAct con trazabilidad completa"],
-  api: ["API / Swagger", "Documentación interactiva de la API que alimenta esta consola"],
+  overview: ["Overview", "Aggregated status of the four pillars and the live agent"],
+  traces: ["Traces", "Live tail of structured events from every agent"],
+  agent: ["Live agent", "Invoke the ReAct agent with full traceability"],
+  api: ["API / Swagger", "Interactive documentation of the API that feeds this console"],
 };
 
 function switchView(view) {
@@ -134,31 +133,31 @@ function switchView(view) {
 
 $all(".nav-item").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
 
-// ─── Salud / entorno ────────────────────────────────────────────────
+// ─── Health / environment ────────────────────────────────────────────────
 async function loadHealth() {
   try {
     const health = await api("/health");
     const pill = $("#env-pill");
     if (health.providers_available.length) {
-      pill.innerHTML = `<span class="dot dot-ok"></span> API real: ${health.providers_available.join(", ")}`;
+      pill.innerHTML = `<span class="dot dot-ok"></span> Real API: ${health.providers_available.join(", ")}`;
     } else {
-      pill.innerHTML = `<span class="dot dot-warn"></span> modo simulado (sin API key)`;
+      pill.innerHTML = `<span class="dot dot-warn"></span> simulated mode (no API key)`;
     }
     $("#agent-provider-hint").textContent = health.providers_available.length
-      ? `usará ${health.providers_available[0]} (API real)`
-      : "usará el simulador ReAct (sin API key en el servidor)";
+      ? `will use ${health.providers_available[0]} (real API)`
+      : "will use the ReAct simulator (no API key on the server)";
 
     $("#auth-btn").dataset.authEnabled = String(health.auth_enabled);
     $("#auth-modal-copy").textContent = health.auth_enabled
-      ? "Este servidor requiere una API key. Introdúcela abajo; se enviará como cabecera X-API-Key en cada petición."
-      : "Este servidor no requiere autenticación en este momento: la API está abierta.";
+      ? "This server requires an API key. Enter it below; it will be sent as the X-API-Key header on every request."
+      : "This server does not require authentication right now: the API is open.";
     refreshAuthButton(health.auth_enabled);
   } catch {
-    $("#env-pill").innerHTML = `<span class="dot dot-bad"></span> API no disponible`;
+    $("#env-pill").innerHTML = `<span class="dot dot-bad"></span> API unavailable`;
   }
 }
 
-// ─── Métricas / KPIs / gráficos ─────────────────────────────────────
+// ─── Metrics / KPIs / charts ─────────────────────────────────────
 function ensureChart(id, config) {
   if (state.charts[id]) { state.charts[id].destroy(); }
   const ctx = $(`#${id}`).getContext("2d");
@@ -177,20 +176,20 @@ async function refreshMetrics() {
   const metrics = await api(`/metrics/summary?window_minutes=${state.windowMinutes}`);
 
   $("#kpi-cost").textContent = fmtUsd(metrics.total_cost_usd);
-  $("#kpi-events").textContent = metrics.total_events.toLocaleString("es-ES");
+  $("#kpi-events").textContent = metrics.total_events.toLocaleString();
   $("#kpi-latency").textContent = fmtMs(metrics.p95_latency_ms);
   $("#kpi-latency-avg").textContent = Math.round(metrics.avg_latency_ms);
   const runsCompleted = metrics.runs_by_status.completed || 0;
   const runsRunning = metrics.runs_by_status.running || 0;
   $("#kpi-runs").textContent = runsCompleted;
-  $("#kpi-runs-hint").textContent = `${runsRunning} en curso`;
+  $("#kpi-runs-hint").textContent = `${runsRunning} in progress`;
   $("#nav-live-count").textContent = metrics.total_events;
 
   const modelEntries = Object.entries(metrics.cost_by_model);
   ensureChart("chart-cost-model", {
     type: "doughnut",
     data: {
-      labels: modelEntries.length ? modelEntries.map(([k]) => k) : ["Sin datos"],
+      labels: modelEntries.length ? modelEntries.map(([k]) => k) : ["No data"],
       datasets: [{
         data: modelEntries.length ? modelEntries.map(([, v]) => v) : [1],
         backgroundColor: ["#6C8EFF", "#22D3C7", "#FBBF24", "#34D399", "#FB5D5D"],
@@ -225,7 +224,7 @@ async function refreshMetrics() {
   });
 }
 
-// ─── Tabla de trazas (histórico + live tail) ────────────────────────
+// ─── Trace table (history + live tail) ────────────────────────
 function renderTraceRow(ev, { animate = false } = {}) {
   const tbody = $("#trace-table-body");
   const emptyRow = tbody.querySelector(".empty-row");
@@ -255,7 +254,7 @@ async function loadRecentEvents() {
   const tbody = $("#trace-table-body");
   tbody.innerHTML = "";
   if (!events.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Sin eventos todavía. Ejecuta un pilar desde Overview.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No events yet. Run a pillar from the Overview.</td></tr>`;
     return;
   }
   events.slice().reverse().forEach((ev) => renderTraceRow(ev));
@@ -273,9 +272,9 @@ function connectLiveTail() {
       renderTraceRow(ev, { animate: true });
       const current = parseInt($("#nav-live-count").textContent || "0", 10);
       $("#nav-live-count").textContent = current + 1;
-    } catch { /* keep-alive u otro payload no-JSON: ignorar */ }
+    } catch { /* keep-alive or another non-JSON payload: ignore */ }
   };
-  es.onerror = () => { /* el navegador reintenta solo; no hacemos nada ruidoso aquí */ };
+  es.onerror = () => { /* the browser retries on its own; nothing noisy here */ };
   state.eventSource = es;
 }
 
@@ -289,18 +288,18 @@ $("#live-toggle").addEventListener("click", () => {
   btn.setAttribute("aria-pressed", String(state.live));
   btn.innerHTML = state.live
     ? `<span class="pulse"></span> Live`
-    : `<span class="pulse"></span> Pausado`;
+    : `<span class="pulse"></span> Paused`;
   if (state.live) connectLiveTail(); else disconnectLiveTail();
 });
 
-// ─── Waterfall de traza (drawer) ─────────────────────────────────────
+// ─── Trace waterfall (drawer) ─────────────────────────────────────
 async function openTraceDrawer(correlationId) {
   const backdrop = $("#drawer-backdrop");
   const drawer = $("#trace-drawer");
   backdrop.hidden = false;
   drawer.hidden = false;
   $("#drawer-correlation-id").textContent = correlationId;
-  $("#drawer-summary").innerHTML = `<span>Cargando…</span>`;
+  $("#drawer-summary").innerHTML = `<span>Loading…</span>`;
   $("#drawer-waterfall").innerHTML = "";
   $("#drawer-events").innerHTML = "";
 
@@ -321,11 +320,11 @@ async function openTraceDrawer(correlationId) {
   const agent = events.find((e) => e.agent_id)?.agent_id || "—";
 
   $("#drawer-summary").innerHTML = `
-    <span>Pilar <b>${pillar}</b></span>
-    <span>Agente <b>${agent}</b></span>
-    <span>Eventos <b>${events.length}</b></span>
-    <span>Duración <b>${totalMs} ms</b></span>
-    <span>Coste <b>${fmtUsd(totalCost)}</b></span>
+    <span>Pillar <b>${pillar}</b></span>
+    <span>Agent <b>${agent}</b></span>
+    <span>Events <b>${events.length}</b></span>
+    <span>Duration <b>${totalMs} ms</b></span>
+    <span>Cost <b>${fmtUsd(totalCost)}</b></span>
   `;
 
   const wf = $("#drawer-waterfall");
@@ -348,7 +347,7 @@ async function openTraceDrawer(correlationId) {
   events.forEach((ev) => {
     const p = ev.payload || {};
     const bodyText = p.thought || p.rationale || p.message
-      || (p.result != null ? `resultado: ${JSON.stringify(p.result)}` : "")
+      || (p.result != null ? `result: ${JSON.stringify(p.result)}` : "")
       || (p.details ? JSON.stringify(p.details) : "");
     const div = document.createElement("div");
     div.className = "dev-event";
@@ -359,7 +358,7 @@ async function openTraceDrawer(correlationId) {
         <strong>${ev.event_type}</strong>
         <span class="dev-event-time">${fmtTime(ev.timestamp)}</span>
       </div>
-      <div class="dev-event-body">${bodyText ? escapeHtml(bodyText) : "<em>sin detalle adicional</em>"}</div>
+      <div class="dev-event-body">${bodyText ? escapeHtml(bodyText) : "<em>no further detail</em>"}</div>
     `;
     evWrap.appendChild(div);
   });
@@ -377,21 +376,21 @@ $("#drawer-close").addEventListener("click", closeDrawer);
 $("#drawer-backdrop").addEventListener("click", closeDrawer);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
 
-// ─── Ejecutar pilares ────────────────────────────────────────────────
+// ─── Run pillars ────────────────────────────────────────────────
 $all(".run-btn").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const pillar = btn.dataset.run;
     btn.disabled = true;
     const originalText = btn.textContent;
-    btn.textContent = "Ejecutando…";
+    btn.textContent = "Running…";
     try {
       const result = await api(`/runs/${pillar}`, { method: "POST", body: JSON.stringify({ team_id: "demo" }) });
-      toast(`Pilar "${pillar}" ejecutado — ver traza en Trazas`, "success");
+      toast(`Pillar "${pillar}" ran; see its trace under Traces`, "success");
       await Promise.all([refreshMetrics(), loadRecentEvents()]);
       switchView("traces");
       setTimeout(() => openTraceDrawer(result.correlation_id), 250);
     } catch (err) {
-      toast(`Error ejecutando ${pillar}: ${err.message}`, "error");
+      toast(`Error running ${pillar}: ${err.message}`, "error");
     } finally {
       btn.disabled = false;
       btn.textContent = originalText;
@@ -399,7 +398,7 @@ $all(".run-btn").forEach((btn) => {
   });
 });
 
-// ─── Agente en vivo ─────────────────────────────────────────────────
+// ─── Live agent ─────────────────────────────────────────────────
 function appendAgentMessage(role, text, thought) {
   const chat = $("#agent-chat");
   const div = document.createElement("div");
@@ -422,20 +421,20 @@ $("#agent-form").addEventListener("submit", async (e) => {
   try {
     const result = await api("/agent/invoke", { method: "POST", body: JSON.stringify({ query, team_id: "demo" }) });
     const summary = result.summary || {};
-    appendAgentMessage("agent", summary.result || "(sin respuesta)");
+    appendAgentMessage("agent", summary.result || "(no answer)");
 
     $("#agent-meta").innerHTML = `
-      <dt>Estado</dt><dd>${summary.status || "—"}</dd>
-      <dt>Proveedor</dt><dd>${summary.provider || "—"}</dd>
-      <dt>Coste</dt><dd>${summary.cost_usd != null ? fmtUsd(summary.cost_usd) : "—"}</dd>
-      <dt>Pasos</dt><dd>${summary.steps ?? "—"}</dd>
+      <dt>Status</dt><dd>${summary.status || "—"}</dd>
+      <dt>Provider</dt><dd>${summary.provider || "—"}</dd>
+      <dt>Cost</dt><dd>${summary.cost_usd != null ? fmtUsd(summary.cost_usd) : "—"}</dd>
+      <dt>Steps</dt><dd>${summary.steps ?? "—"}</dd>
     `;
     state.lastAgentCorrelationId = result.correlation_id;
     $("#agent-view-trace").disabled = !result.correlation_id;
     refreshMetrics();
   } catch (err) {
     appendAgentMessage("agent", `Error: ${err.message}`);
-    toast(`Error invocando al agente: ${err.message}`, "error");
+    toast(`Error invoking the agent: ${err.message}`, "error");
   } finally {
     submitBtn.disabled = false;
   }
@@ -445,13 +444,13 @@ $("#agent-view-trace").addEventListener("click", () => {
   if (state.lastAgentCorrelationId) openTraceDrawer(state.lastAgentCorrelationId);
 });
 
-// ─── Ventana de tiempo ──────────────────────────────────────────────
+// ─── Time window ──────────────────────────────────────────────
 $("#window-minutes").addEventListener("change", (e) => {
   state.windowMinutes = parseInt(e.target.value, 10);
   refreshMetrics();
 });
 
-// ─── Arranque ───────────────────────────────────────────────────────
+// ─── Start-up ───────────────────────────────────────────────────────
 async function init() {
   await loadHealth();
   await Promise.all([refreshMetrics(), loadRecentEvents()]);

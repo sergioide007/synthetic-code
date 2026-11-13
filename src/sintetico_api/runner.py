@@ -1,12 +1,12 @@
 """
-sintetico_api.runner — Ejecuta cada uno de los 4 pilares del libro (y el
-agente ReAct de `trazabilidad`) instrumentados de punta a punta, emitiendo
-cada paso como un evento estructurado hacia un `TraceStore`.
+sintetico_api.runner: runs each of the book's four pillars (and the
+`trazabilidad` ReAct agent) instrumented end to end, emitting every step as a
+structured event into a `TraceStore`.
 
-Como `store.py`, este módulo no depende de FastAPI ni de Pydantic: recibe
-y devuelve `dataclasses`/`dict` planos. Esto permite probarlo con pytest
-sin necesidad de un cliente HTTP, y mantiene la capa web (routers/) como
-un adaptador delgado que sólo traduce HTTP <-> estas funciones.
+Like `store.py`, this module does not depend on FastAPI or Pydantic: it takes
+and returns plain `dataclasses`/`dict`s. That makes it testable with pytest
+without an HTTP client, and keeps the web layer (routers/) a thin adapter that
+only translates HTTP <-> these functions.
 """
 
 from __future__ import annotations
@@ -47,15 +47,15 @@ PILLARS = ("orchestration", "quality_gate", "self_cleaning", "resilient_swarm")
 
 _SIMULATED_TOKENS_BY_TIER = {"haiku": 50, "sonnet": 100, "opus": 200}
 _DEMO_QUERIES = [
-    "Hola, necesito ayuda",
-    "Error en la base de datos",
-    "Revisar arquitectura de pagos",
-    "Hola, necesito ayuda",
-    "Error 500 en API",
-    "Diseñar sistema de caché",
-    "Saludo inicial",
-    "Problema con login",
-    "Estrategia de microservicios",
+    "Hi, I need help",
+    "Error in the database",
+    "Review the payments architecture",
+    "Hi, I need help",
+    "Error 500 in the API",
+    "Design a caching system",
+    "Opening greeting",
+    "Login problem",
+    "Microservices strategy",
 ]
 
 
@@ -63,7 +63,7 @@ def _make_logger(store: TraceStore, run_id: str, pillar: str, agent_id: str, tea
     return StructuredAgentLogger(
         agent_id=agent_id,
         team_id=team_id,
-        output_stream=None,  # no queremos volcar JSON a la consola del servidor
+        output_stream=None,  # don't dump JSON to the server console
         sink=lambda entry: store.insert_event(entry, run_id=run_id, pillar=pillar),
     )
 
@@ -79,7 +79,7 @@ def _simulated_cost(alias: str, tokens: int) -> float:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Pilar 1 — Orquestación eficiente
+# Pillar 1: efficient orchestration
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -134,7 +134,7 @@ def run_orchestration_case(store: TraceStore, team_id: str = "demo") -> Dict[str
 
         total_cost += cost
         total_tokens += tokens
-        cache.set(query, "respuesta simulada")
+        cache.set(query, "simulated answer")
         logger.tool_result(
             correlation_id,
             tool_name=f"llm:{resolve_model_id(alias)}",
@@ -165,7 +165,7 @@ def run_orchestration_case(store: TraceStore, team_id: str = "demo") -> Dict[str
     logger.finish_session(
         correlation_id,
         status="success",
-        message="Orquestación completada",
+        message="Orchestration completed",
         tokens_input=int(total_tokens * 0.7),
         tokens_output=int(total_tokens * 0.3),
         cost_usd=total_cost,
@@ -175,12 +175,12 @@ def run_orchestration_case(store: TraceStore, team_id: str = "demo") -> Dict[str
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Pilar 2 — Calidad autónoma en CI/CD
+# Pillar 2: autonomous quality in CI/CD
 # ═══════════════════════════════════════════════════════════════════
 
 _DEMO_PRS = [
     {
-        "name": "PR #1 - Excelente",
+        "name": "PR #1 - Excellent",
         "pass_rate": 0.95,
         "precision": 0.92,
         "human_approval": 0.98,
@@ -188,7 +188,7 @@ _DEMO_PRS = [
         "consistency": 0.95,
     },
     {
-        "name": "PR #2 - Bugs críticos",
+        "name": "PR #2 - Critical bugs",
         "pass_rate": 0.82,
         "precision": 0.78,
         "human_approval": 0.85,
@@ -196,7 +196,7 @@ _DEMO_PRS = [
         "consistency": 0.70,
     },
     {
-        "name": "PR #3 - Baja precisión",
+        "name": "PR #3 - Low precision",
         "pass_rate": 0.72,
         "precision": 0.65,
         "human_approval": 0.80,
@@ -240,7 +240,7 @@ def run_quality_gate_case(store: TraceStore, team_id: str = "demo") -> Dict[str,
                 run_id,
                 res.recommendation,
                 OverrideReason.FALSE_POSITIVE,
-                "El agente carece de contexto de negocio; confirmado como falso positivo por el tech lead",
+                "The agent lacks business context; the tech lead confirmed it as a false positive",
                 "DevLead",
             )
             approval = override_gw.approve_override(req_id, "CTO")
@@ -262,7 +262,7 @@ def run_quality_gate_case(store: TraceStore, team_id: str = "demo") -> Dict[str,
     logger.finish_session(
         correlation_id,
         status="success",
-        message="Gate de CI/CD evaluado",
+        message="CI/CD gate evaluated",
         tokens_input=0,
         tokens_output=0,
         cost_usd=0.0,
@@ -272,7 +272,7 @@ def run_quality_gate_case(store: TraceStore, team_id: str = "demo") -> Dict[str,
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Pilar 3 — Código autolimpiable
+# Pillar 3: self-cleaning code
 # ═══════════════════════════════════════════════════════════════════
 
 _DIRTY_CODE = """def process_user(data):
@@ -303,7 +303,7 @@ def run_self_cleaning_case(store: TraceStore, team_id: str = "demo") -> Dict[str
     logger.reasoning_step(
         correlation_id,
         1,
-        thought=f"Detectados {len(smells)} smell(s) de código",
+        thought=f"Detected {len(smells)} code smell(s)",
         tool_invoked="agent_analyzer",
         tool_args=None,
         confidence=0.95,
@@ -324,9 +324,9 @@ def run_self_cleaning_case(store: TraceStore, team_id: str = "demo") -> Dict[str
     )
 
     dt = DebtTracker()
-    debt = dt.add_debt("code_duplication", "medium", "Código duplicado en funciones de usuario (previo al refactor)")
+    debt = dt.add_debt("code_duplication", "medium", "Duplicated code in user functions (before the refactor)")
     logger.decision(
-        correlation_id, decision="registrar_deuda", rationale=debt.description, confidence=1.0, trust_score=1.0
+        correlation_id, decision="record_debt", rationale=debt.description, confidence=1.0, trust_score=1.0
     )
 
     summary = {
@@ -356,7 +356,7 @@ def run_self_cleaning_case(store: TraceStore, team_id: str = "demo") -> Dict[str
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Pilar 4 — Arquitectura resiliente (enjambre + circuit breaker)
+# Pillar 4: resilient architecture (swarm + circuit breaker)
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -368,12 +368,12 @@ def run_resilient_swarm_case(store: TraceStore, team_id: str = "demo") -> Dict[s
 
     swarm = SwarmTokenOrchestrator(run_id, total_budget_tokens=400)
     messages = [
-        ("AgentA", "AgentB", "Propongo solución X", 50),
-        ("AgentB", "AgentA", "No, Y es mejor", 50),
-        ("AgentA", "AgentB", "X es más eficiente", 50),
-        ("AgentB", "AgentA", "Y es más seguro", 50),
-        ("AgentA", "AgentB", "Insisto en X", 50),
-        ("AgentB", "AgentA", "Y es mejor, revisa", 50),
+        ("AgentA", "AgentB", "I propose solution X", 50),
+        ("AgentB", "AgentA", "No, Y is better", 50),
+        ("AgentA", "AgentB", "X is more efficient", 50),
+        ("AgentB", "AgentA", "Y is safer", 50),
+        ("AgentA", "AgentB", "I insist on X", 50),
+        ("AgentB", "AgentA", "Y is better, check again", 50),
     ]
     halted_at = None
     for i, (from_agent, to_agent, msg, cost) in enumerate(messages, 1):
@@ -417,7 +417,7 @@ def run_resilient_swarm_case(store: TraceStore, team_id: str = "demo") -> Dict[s
     logger.finish_session(
         correlation_id,
         status="success",
-        message="Simulación de enjambre completada",
+        message="Swarm simulation completed",
         tokens_input=swarm.spent_tokens,
         tokens_output=0,
         cost_usd=0.0,
@@ -427,38 +427,38 @@ def run_resilient_swarm_case(store: TraceStore, team_id: str = "demo") -> Dict[s
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Agente ReAct en vivo (usa proveedor real si hay API key, si no Mock)
+# Live ReAct agent (real provider when an API key exists, Mock otherwise)
 # ═══════════════════════════════════════════════════════════════════
 
 
 def _mock_react_llm_call() -> Callable[[str, dict], dict]:
-    """LLM simulado que entiende el formato ReAct del prompt del sistema y
-    resuelve en 1-2 ciclos de forma determinista, para poder ver el flujo
-    completo en el dashboard sin necesitar una API key."""
+    """Simulated LLM that understands the system prompt's ReAct format and
+    resolves deterministically in 1-2 cycles, so the full flow is visible in
+    the dashboard without an API key."""
 
     def llm_call(prompt: str, params: dict) -> Dict[str, Any]:
         lowered = prompt.lower()
         if "observation:" not in lowered:
-            if "archivo" in lowered or "file" in lowered:
+            if "archivo" in lowered or "file" in lowered:            # English or Spanish queries
                 content = (
-                    "Thought: Necesito listar los archivos disponibles.\n"
+                    "Thought: I need to list the available files.\n"
                     'Action: list_files\nAction Input: {"directory": "."}'
                 )
             elif "buscar" in lowered or "search" in lowered or "documentaci" in lowered:
                 content = (
-                    'Thought: Debo buscar en la documentación.\nAction: search_docs\nAction Input: {"query": "info"}'
+                    'Thought: I should search the documentation.\nAction: search_docs\nAction Input: {"query": "info"}'
                 )
             else:
                 content = (
-                    "Thought: Puedo responder directamente sin usar herramientas.\n"
+                    "Thought: I can answer directly without using tools.\n"
                     'Action: None\nAction Input: {"result": '
-                    '"Respuesta simulada: en un entorno con API key real, aquí '
-                    'respondería el modelo Claude real."}'
+                    '"Simulated answer: with a real API key, the real Claude model '
+                    'would answer here."}'
                 )
         else:
             content = (
-                "Thought: Ya tengo suficiente información para responder.\n"
-                'Action: None\nAction Input: {"result": "Tarea completada con la información obtenida."}'
+                "Thought: I now have enough information to answer.\n"
+                'Action: None\nAction Input: {"result": "Task completed with the information gathered."}'
             )
         return {"content": content, "tokens": 45}
 

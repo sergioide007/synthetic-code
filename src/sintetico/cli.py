@@ -47,11 +47,18 @@ def _key(env_name: str) -> str:
     return key
 
 
+def _critical_count(r: Dict[str, Any]) -> int:
+    """`gate` accepts its own format (``critical_bugs``) and the output of ``sintetico eval``
+    (``critical_failures``), so ``eval > results.json && gate --results results.json`` works.
+    If both keys are present, the larger count wins (fail safe)."""
+    return max(int(r.get("critical_bugs", 0) or 0), int(r.get("critical_failures", 0) or 0))
+
+
 def cmd_gate(a: argparse.Namespace) -> int:
     r = _read_json(a.results)
     res = TrustScoreCalculator().calculate(
         pass_rate=float(r["pass_rate"]), precision=float(r.get("precision", r["pass_rate"])),
-        human_approval=float(r.get("human_approval", 0.0)), critical_bugs=int(r.get("critical_bugs", 0)),
+        human_approval=float(r.get("human_approval", 0.0)), critical_bugs=_critical_count(r),
         consistency_score=float(r.get("consistency_score", 1.0)))
     code = res.ci_exit_code
     reasons: List[str] = [] if code == 0 else [res.recommendation]
@@ -121,7 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="command", required=True)
 
     g = sub.add_parser("gate", help="CI trust gate from an eval-results JSON file")
-    g.add_argument("--results", required=True, help='JSON: {"pass_rate":0.9,"precision":0.9,"human_approval":1,"critical_bugs":0,"consistency_score":1}')
+    g.add_argument("--results", required=True, help='JSON: {"pass_rate":0.9,"precision":0.9,"human_approval":1,"critical_bugs":0,"consistency_score":1}; the output of `sintetico eval` is accepted too')
     g.add_argument("--min-trust", type=float, default=0.70)
     g.add_argument("--min-pass-rate", type=float, default=0.80)
     g.add_argument("--previous-score", type=float, default=None, help="previous trust score, to detect drift")

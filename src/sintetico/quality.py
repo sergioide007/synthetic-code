@@ -62,10 +62,10 @@ class AgentAnalyzer:
             smells.append(
                 CodeSmell(
                     CodeSmellType.DUPLICATE_CODE,
-                    "múltiples ubicaciones",
+                    "multiple locations",
                     "medium",
-                    f"Se detectaron {print_calls} llamadas a print(); candidatas a extraer a una función común.",
-                    "Extraer a una función auxiliar (_log)",
+                    f"Found {print_calls} print() calls; candidates for extraction into a shared function.",
+                    "Extract into a helper function (_log)",
                 )
             )
         return smells
@@ -121,7 +121,7 @@ class SelfCleaningCodeLoop:
             compile(code, "<string>", "exec")
             return True, None
         except SyntaxError as exc:
-            return False, f"SyntaxError en línea {exc.lineno}: {exc.msg}"
+            return False, f"SyntaxError on line {exc.lineno}: {exc.msg}"
 
     def clean(self, code: str) -> Dict:
         valid, error = self._static_validate(code)
@@ -171,12 +171,12 @@ class TrustScore:
     def get_autonomy_level(self) -> str:
         score = self.compute()
         if score >= 80:
-            return "Alta autonomía"
+            return "High autonomy"
         if score >= 60:
-            return "Media autonomía"
+            return "Medium autonomy"
         if score >= 40:
-            return "Baja autonomía"
-        return "Sin autonomía"
+            return "Low autonomy"
+        return "No autonomy"
 
 
 class ShadowVerdict(Enum):
@@ -204,7 +204,7 @@ class ShadowAgent:
         constraints: Optional[List[str]] = None,
     ):
         if strategy not in {"adversarial", "consistency", "constraints"}:
-            raise ValueError(f"Estrategia desconocida: {strategy}")
+            raise ValueError(f"Unknown strategy: {strategy}")
         self.llm_call = llm_call or (lambda prompt: '{"verdict": "approve", "findings": []}')
         self.strategy = strategy
         self.constraints = constraints or []
@@ -217,21 +217,21 @@ class ShadowAgent:
         return self._constraints_validate(main_output)
 
     def _adversarial_validate(self, task: str, output: str) -> ShadowDecision:
-        response = self.llm_call(f"Refuta esta solución. Tarea: {task}. Output: {output}")
+        response = self.llm_call(f"Try to refute this solution. Task: {task}. Output: {output}. If you find nothing wrong, answer exactly: no problems.")
         if any(p in response.lower() for p in ("no problemas", "no problems", "no issues", "no flaws", "no weaknesses")):
-            return ShadowDecision(ShadowVerdict.APPROVE, "Sin fallos encontrados", 0.9, [])
-        return ShadowDecision(ShadowVerdict.REJECT, "Debilidades encontradas", 0.7, ["Posible fallo"])
+            return ShadowDecision(ShadowVerdict.APPROVE, "No flaws found", 0.9, [])
+        return ShadowDecision(ShadowVerdict.REJECT, "Weaknesses found", 0.7, ["Possible flaw"])
 
     def _consistency_validate(self, output: str) -> ShadowDecision:
         if any(p in output.lower() for p in ("contradicción", "contradiccion", "contradiction", "inconsistent")):
-            return ShadowDecision(ShadowVerdict.REJECT, "Inconsistencia detectada", 0.8, [])
-        return ShadowDecision(ShadowVerdict.APPROVE, "Coherente", 0.85, [])
+            return ShadowDecision(ShadowVerdict.REJECT, "Inconsistency detected", 0.8, [])
+        return ShadowDecision(ShadowVerdict.APPROVE, "Consistent", 0.85, [])
 
     def _constraints_validate(self, output: str) -> ShadowDecision:
         violated = [c for c in self.constraints if c.lower() in output.lower()]
         if violated:
-            return ShadowDecision(ShadowVerdict.REJECT, f"Viola: {', '.join(violated)}", 0.95, violated)
-        return ShadowDecision(ShadowVerdict.APPROVE, "Restricciones cumplidas", 0.9, [])
+            return ShadowDecision(ShadowVerdict.REJECT, f"Violates: {', '.join(violated)}", 0.95, violated)
+        return ShadowDecision(ShadowVerdict.APPROVE, "Constraints satisfied", 0.9, [])
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -257,7 +257,7 @@ class DebtTracker:
 
     def add_debt(self, debt_type: str, severity: str, description: str) -> AgentDebt:
         if severity not in self._SEVERITY_ORDER:
-            raise ValueError(f"Severidad desconocida: {severity}")
+            raise ValueError(f"Unknown severity: {severity}")
         self._id_counter += 1
         debt = AgentDebt(f"DEBT-{self._id_counter:04d}", debt_type, severity, datetime.now(timezone.utc), description)
         self.debt_items.append(debt)
@@ -327,5 +327,5 @@ class TrustScoreCalculator:
         else:
             exit_code = 0
 
-        recommendation = "OK" if exit_code == 0 else f"Fallo: score={score}, bugs={critical_bugs}"
+        recommendation = "OK" if exit_code == 0 else f"Failed: score={score}, critical_bugs={critical_bugs}"
         return TrustScoreResult(score, level, components, exit_code, recommendation)

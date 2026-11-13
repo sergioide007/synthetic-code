@@ -165,9 +165,10 @@ Verify it yourself: `sh scripts/verify.sh` (tests, lint, types, security scan, d
 | `docs/` | What was and was not verified; book errata found while implementing |
 | `demos/`, `notebooks/`, `README.es.md` | Material of the Spanish edition of the book (prose in Spanish, same code) |
 
-Documentation, examples, public docstrings and the command-line tool are in English. The package is named `sintetico`
-after the Spanish title of the book (*Código sintético*). Some user-facing messages of the older modules, the
-dashboard and the demos are still in Spanish; `ShadowAgent` and `ModelRouter` understand both languages.
+Code, messages, documentation, examples, the dashboard and the command-line tool are in English. The package is named
+`sintetico` after the Spanish title of the book (*Código sintético*). The heuristics that read user or model text
+(`EscalationPolicy`, `ModelRouter`, `SecurityScanner`, `ShadowAgent`, the Tree of Thoughts parser) understand both
+English and Spanish, and `tests/test_i18n.py` keeps it that way. Only `demos/` and `notebooks/` remain in Spanish.
 
 ## Design principles
 

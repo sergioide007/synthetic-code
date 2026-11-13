@@ -99,7 +99,7 @@ class RedisBudgetBackend(BudgetBackend):
         try:
             import redis  # local import so the dependency is not mandatory
         except ImportError as exc:
-            raise ImportError("Instala redis-py: pip install redis") from exc
+            raise ImportError("Install redis-py: pip install redis") from exc
 
         self.prefix = prefix
         self.redis = redis.Redis(
@@ -138,7 +138,7 @@ class RedisBudgetBackend(BudgetBackend):
             result = self._incr_script(keys=[full_key], args=[amount, limit])
             return result != 0
         except Exception:
-            logger.exception("Fallo el script Lua, aplicando fallback con WATCH/MULTI")
+            logger.exception("Lua script failed; falling back to WATCH/MULTI")
             return self._add_cost_with_optimistic_lock(full_key, amount, limit)
 
     def _add_cost_with_optimistic_lock(self, full_key: str, amount: float, limit: float) -> bool:
@@ -180,7 +180,7 @@ class TokenBudget:
 
     def __post_init__(self) -> None:
         if self.monthly_budget <= 0:
-            raise ValueError("monthly_budget debe ser positivo")
+            raise ValueError("monthly_budget must be positive")
 
     @property
     def _key(self) -> str:
@@ -198,7 +198,7 @@ class TokenBudget:
     def record_cost(self, cost: float) -> bool:
         """Record `cost` if it does not exceed the budget. Return whether it succeeded."""
         if cost < 0:
-            raise ValueError("cost no puede ser negativo")
+            raise ValueError("cost cannot be negative")
         if not self.backend.add_cost(self._key, cost, self.monthly_budget):
             return False
         self._check_alerts()
@@ -210,7 +210,7 @@ class TokenBudget:
         for threshold in (0.5, 0.75, 0.9, 1.0):
             if pct >= threshold and not self.alerts_triggered.get(threshold):
                 self.alerts_triggered[threshold] = True
-                message = f"Budget {int(threshold * 100)}% alcanzado para {self.team_id}"
+                message = f"Budget {int(threshold * 100)}% reached for {self.team_id}"
                 logger.warning(message)
                 if self.on_alert:
                     self.on_alert(threshold, self.team_id, spent)

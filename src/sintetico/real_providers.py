@@ -82,7 +82,7 @@ def _with_retries(fn, retry_config: RetryConfig, retryable_exceptions: tuple):
                 break
             delay = retry_config.delay_for(attempt)
             logger.warning(
-                "Intento %s/%s falló (%s). Reintentando en %.2fs",
+                "Attempt %s/%s failed (%s). Retrying in %.2fs",
                 attempt + 1,
                 retry_config.max_attempts,
                 exc,
@@ -121,13 +121,13 @@ class RealAnthropicProvider(LLMProvider):
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
             raise AuthenticationError(
-                "ANTHROPIC_API_KEY no configurada. Expórtala como variable de "
-                "entorno o pásala explícitamente a RealAnthropicProvider(api_key=...)."
+                "ANTHROPIC_API_KEY is not set. Export it as an environment "
+                "variable or pass it explicitly to RealAnthropicProvider(api_key=...)."
             )
         try:
             import anthropic
         except ImportError as exc:
-            raise ImportError("Instala el SDK: pip install anthropic") from exc
+            raise ImportError("Install the SDK: pip install anthropic") from exc
 
         self._anthropic = anthropic
         self.client = anthropic.Anthropic(api_key=self.api_key, timeout=timeout_seconds)
@@ -173,7 +173,7 @@ class RealAnthropicProvider(LLMProvider):
         except (AuthenticationError, ContextLengthError):
             raise
         except Exception as exc:  # noqa: BLE001
-            logger.error("Error en Anthropic tras reintentos: %s", exc)
+            logger.error("Anthropic error after retries: %s", exc)
             raise LLMProviderError(f"Anthropic error: {exc}") from exc
 
     def complete_structured(self, request: LLMRequest, json_schema: dict, name: str = "structured_output") -> LLMResponse:
@@ -207,7 +207,7 @@ class RealOpenAIProvider(LLMProvider):
         try:
             import openai
         except ImportError as exc:
-            raise ImportError("Instala el SDK: pip install openai") from exc
+            raise ImportError("Install the SDK: pip install openai") from exc
 
         self._openai = openai
         self.client = openai.OpenAI(api_key=self.api_key, timeout=timeout_seconds)
@@ -251,7 +251,7 @@ class RealOpenAIProvider(LLMProvider):
         except (AuthenticationError, ContextLengthError):
             raise
         except Exception as exc:  # noqa: BLE001
-            logger.error("Error en OpenAI tras reintentos: %s", exc)
+            logger.error("OpenAI error after retries: %s", exc)
             raise LLMProviderError(f"OpenAI error: {exc}") from exc
 
     def complete_structured(self, request: LLMRequest, json_schema: dict, name: str = "structured_output") -> LLMResponse:
@@ -287,7 +287,7 @@ class LocalLLMProvider(LLMProvider):
         try:
             import requests
         except ImportError as exc:
-            raise ImportError("Instala requests: pip install requests") from exc
+            raise ImportError("Install requests: pip install requests") from exc
         self._requests = requests
 
     def complete(self, request: LLMRequest) -> LLMResponse:

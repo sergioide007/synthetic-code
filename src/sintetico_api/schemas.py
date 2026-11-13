@@ -1,10 +1,10 @@
 """
-sintetico_api.schemas — Modelos Pydantic de request/response.
+sintetico_api.schemas: Pydantic request/response models.
 
-Esta es la única capa del servicio que conoce Pydantic; existe
-específicamente para producir una documentación OpenAPI/Swagger rica y
-tipada (`/docs`, `/redoc`, `/openapi.json`). La lógica de negocio real
-vive en `runner.py`/`store.py` y no depende de estos modelos.
+This is the only layer of the service that knows about Pydantic; it exists to
+produce rich, typed OpenAPI/Swagger documentation (`/docs`, `/redoc`,
+`/openapi.json`). The real business logic lives in `runner.py`/`store.py` and
+does not depend on these models.
 """
 
 from __future__ import annotations
@@ -30,23 +30,23 @@ class ProviderType(str, Enum):
 
 
 class RunRequest(BaseModel):
-    team_id: str = Field(default="demo", description="Equipo/tenant al que se atribuye la ejecución y su coste.")
+    team_id: str = Field(default="demo", description="Team/tenant the run and its cost are attributed to.")
 
 
 class RunSummary(BaseModel):
-    run_id: str = Field(description="Identificador de la ejecución (agrupa todas las trazas que produjo).")
-    correlation_id: str = Field(description="Identificador de la traza principal; úsalo en /traces/{correlation_id}.")
-    summary: Dict[str, Any] = Field(description="Métricas de negocio específicas del pilar ejecutado.")
+    run_id: str = Field(description="Run identifier (groups every trace it produced).")
+    correlation_id: str = Field(description="Main trace identifier; use it in /traces/{correlation_id}.")
+    summary: Dict[str, Any] = Field(description="Business metrics specific to the pillar that ran.")
 
 
 class ReactAgentRequest(BaseModel):
-    query: str = Field(min_length=1, max_length=2000, description="Consulta en lenguaje natural para el agente ReAct.")
+    query: str = Field(min_length=1, max_length=2000, description="Natural-language query for the ReAct agent.")
     team_id: str = Field(default="demo")
     provider: ProviderType = Field(
         default=ProviderType.auto,
         description=(
-            "Proveedor a usar. 'auto' usa un proveedor real si hay una API key en el entorno del "
-            "servidor (ANTHROPIC_API_KEY/OPENAI_API_KEY); si no, cae a 'mock' automáticamente."
+            "Provider to use. 'auto' uses a real provider when the server environment has an API "
+            "key (ANTHROPIC_API_KEY/OPENAI_API_KEY); otherwise it falls back to 'mock' automatically."
         ),
     )
 
@@ -96,8 +96,8 @@ class HealthOut(BaseModel):
     version: str
     sintetico_version: str
     auth_enabled: bool = Field(
-        description="Si es true, todos los endpoints /api/v1/* (salvo /health) exigen la cabecera X-API-Key."
+        description="When true, every /api/v1/* endpoint (except /health) requires the X-API-Key header."
     )
     providers_available: List[str] = Field(
-        description="Proveedores reales que el servidor puede usar según las variables de entorno detectadas."
+        description="Real providers the server can use, based on the environment variables it found."
     )
