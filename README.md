@@ -193,7 +193,8 @@ The code is archived on Zenodo. Cite the concept DOI, which always resolves to t
 > Perez Ruiz, S. (2026). *Synthetic Code: reference implementation* [Computer software]. Zenodo.
 > https://doi.org/10.5281/zenodo.24161299
 
-To cite the exact version you used, take its own DOI from the Zenodo record (v2.2.2:
+To cite the exact version you used, take its own DOI from the Zenodo record (v2.2.3:
+[10.5281/zenodo.24206901](https://doi.org/10.5281/zenodo.24206901); v2.2.2:
 [10.5281/zenodo.24196751](https://doi.org/10.5281/zenodo.24196751); v2.2.1:
 [10.5281/zenodo.24161300](https://doi.org/10.5281/zenodo.24161300)). GitHub's **Cite this repository** button reads
 [CITATION.cff](CITATION.cff).

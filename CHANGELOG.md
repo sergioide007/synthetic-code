@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2.2.3 (2026-11-13)
+Zenodo: [10.5281/zenodo.24206901](https://doi.org/10.5281/zenodo.24206901).
 
 ### Fixed
 - `RealAnthropicProvider` no longer sends `temperature`. The Claude 5.5 models in the registry reject sampling
