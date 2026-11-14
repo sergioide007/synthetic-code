@@ -36,7 +36,9 @@ def test_hashing_embedder_is_unit_length_deterministic_and_rewards_shared_words(
 def test_hashing_embedder_is_identical_across_processes_despite_hash_randomisation():
     code = "from sintetico.semantic_cache import HashingEmbedder as H;print(H(64).embed('same text every time').round(4).tolist())"
     outs = {subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env={**os.environ, "PYTHONHASHSEED": s}).stdout for s in ("1", "2", "random")}
-    assert len(outs) == 1 and outs.pop().startswith("[")
+    assert len(outs) == 1
+    (only,) = outs
+    assert only.startswith("[")
 
 
 # -------------------------------------------------------------------------------------- linear baseline

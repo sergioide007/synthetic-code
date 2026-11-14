@@ -1,14 +1,12 @@
+import importlib.util
+
 import pytest
 
 from sintetico import PermissionLevel, SecurityScanner
 
-try:
-    import jsonschema  # noqa: F401
+_HAS_JSONSCHEMA = importlib.util.find_spec("jsonschema") is not None
+if _HAS_JSONSCHEMA:
     from sintetico import MCPTool, MPCHost
-
-    _HAS_JSONSCHEMA = True
-except ImportError:
-    _HAS_JSONSCHEMA = False
 
 
 class TestSecurityScanner:

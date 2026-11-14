@@ -344,7 +344,7 @@ class PostgresTraceStore(BaseTraceStore):
             try:
                 q.put_nowait(event)
             except queue.Full:
-                pass
+                pass  # slow live-tail subscriber: drop this event for it rather than block the writer
 
     def close(self) -> None:
         self._stop_listener.set()

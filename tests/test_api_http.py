@@ -20,7 +20,8 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 @pytest.fixture
 def client(monkeypatch):
-    db_path = tempfile.mktemp(suffix=".db")
+    fd, db_path = tempfile.mkstemp(suffix=".db")  # created atomically (mktemp is race-prone)
+    os.close(fd)
     monkeypatch.setenv("SINTETICO_API_DB_PATH", db_path)
 
     from sintetico_api import deps

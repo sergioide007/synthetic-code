@@ -118,7 +118,7 @@ def cmd_admission_serve(a: argparse.Namespace) -> int:  # pragma: no cover - blo
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
-        pass
+        pass  # Ctrl+C is the normal way to stop the server
     return EXIT_OK
 
 

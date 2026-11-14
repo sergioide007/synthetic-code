@@ -89,7 +89,9 @@ def _with_retries(fn, retry_config: RetryConfig, retryable_exceptions: tuple):
                 delay,
             )
             time.sleep(delay)
-    raise last_exc  # type: ignore[misc]
+    if last_exc is None:  # only reachable with max_attempts < 1
+        raise ValueError("retry_config.max_attempts must be >= 1")
+    raise last_exc
 
 
 def _usage_cost(model_id: str, input_tokens: int, output_tokens: int) -> float:

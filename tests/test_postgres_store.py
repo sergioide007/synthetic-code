@@ -623,7 +623,7 @@ class TestPostgresConnectionPool:
                     {"correlation_id": f"pg-pool-err-{i}", "event_type": "x", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}
                 )
             except Exception:
-                pass
+                pass  # se esperan fallos aquí: el test verifica que el pool sobrevive a ellos
         # El pool sigue funcionando
         event_id = store.insert_event(
             {"correlation_id": "pg-pool-ok", "event_type": "ok", "level": "INFO", "timestamp": "2026-01-01T00:00:00+00:00"}

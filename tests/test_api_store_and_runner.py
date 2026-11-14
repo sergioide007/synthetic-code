@@ -22,7 +22,8 @@ from sintetico_api.store import TraceStore
 
 @pytest.fixture
 def store():
-    path = tempfile.mktemp(suffix=".db")
+    fd, path = tempfile.mkstemp(suffix=".db")  # created atomically (mktemp is race-prone)
+    os.close(fd)
     s = TraceStore(path)
     yield s
     s.close()

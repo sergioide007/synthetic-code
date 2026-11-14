@@ -79,7 +79,8 @@ def main():
             "note": "search cost only (embeddings precomputed); noisy-copy queries; see scripts/bench_semantic_cache.py"}
     if a.out:
         os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
-        json.dump({"meta": meta, "results": rows}, open(a.out, "w"), indent=2)
+        with open(a.out, "w", encoding="utf-8") as fh:
+            json.dump({"meta": meta, "results": rows}, fh, indent=2)
     return 0
 
 

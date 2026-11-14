@@ -17,7 +17,8 @@ from sintetico_api.store import TraceStore
 
 
 def _make_sqlite_store():
-    path = tempfile.mktemp(suffix=".db")
+    fd, path = tempfile.mkstemp(suffix=".db")  # created atomically (mktemp is race-prone)
+    os.close(fd)
     store = TraceStore(path)
     yield store
     store.close()

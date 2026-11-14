@@ -7,7 +7,7 @@ import enum
 import threading
 import uuid
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
 from .audit import AgentAuditLogger
 from .budget import LocalMemoryBudgetBackend, TokenBudget
@@ -136,7 +136,12 @@ class AIGatewayWithProjects(AIGateway):
         budget, _ = self._projects[project_id]
         return budget.spent / budget.monthly_budget
 
-    def complete(self, team_id: str, user_message: str, project_id: Optional[str] = None, **kwargs) -> GatewayResult:  # type: ignore[override]
+    def complete(self, team_id: str, user_message: str, *args: Any, project_id: Optional[str] = None,  # type: ignore[override]
+                 **kwargs: Any) -> GatewayResult:
+        # project_id is keyword-only so positional arguments keep the parent's meaning (system_prompt, complexity, ...).
+        if len(args) > 4:
+            raise TypeError("complete() takes at most 4 positional arguments after user_message")
+        kwargs.update(zip(("system_prompt", "complexity", "model", "max_tokens"), args))
         if project_id is None:
             return super().complete(team_id, user_message, **kwargs)
         if project_id not in self._projects:
