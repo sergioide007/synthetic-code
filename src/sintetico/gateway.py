@@ -141,7 +141,7 @@ class AIGatewayWithProjects(AIGateway):
         # project_id is keyword-only so positional arguments keep the parent's meaning (system_prompt, complexity, ...).
         if len(args) > 4:
             raise TypeError("complete() takes at most 4 positional arguments after user_message")
-        kwargs.update(zip(("system_prompt", "complexity", "model", "max_tokens"), args))
+        kwargs.update(zip(("system_prompt", "complexity", "model", "max_tokens"), args, strict=False))  # 0-4 args
         if project_id is None:
             return super().complete(team_id, user_message, **kwargs)
         if project_id not in self._projects:
