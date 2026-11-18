@@ -4,6 +4,9 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24161299.svg)](https://doi.org/10.5281/zenodo.24161299)
 
+> **🎬 Tráiler oficial — [Descargar desde el último release ↓](https://github.com/sergioide007/synthetic-code/releases/latest)**  
+> Video vertical de 60 segundos, listo para compartir en TikTok · Instagram Reels · YouTube Shorts · LinkedIn.
+
 ## Novedades de la v2.1 (guía rápida para proyectos reales)
 
 La versión 2.1 añade los patrones de las Partes II–VI de la edición inglesa del libro **Synthetic Code**:

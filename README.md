@@ -3,6 +3,9 @@
 [![CI](https://github.com/sergioide007/synthetic-code/actions/workflows/ci.yml/badge.svg)](https://github.com/sergioide007/synthetic-code/actions)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24161299.svg)](https://doi.org/10.5281/zenodo.24161299)
 
+> **🎬 Official trailer — [Download from latest release ↓](https://github.com/sergioide007/synthetic-code/releases/latest)**  
+> 60-second vertical video, ready to share on TikTok · Instagram Reels · YouTube Shorts · LinkedIn.
+
 Production patterns for systems built with **AI agents**: budgets and routing, tamper-evident audit logs,
 evals as a CI gate, bounded autonomy, supervised migrations, compliance evidence. It is the companion code of the
 book *Synthetic Code: The Art of Orchestrating AI Agents*, but it is a normal Python library you can use on its own.
